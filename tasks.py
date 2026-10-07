@@ -35,7 +35,9 @@ def task_addressing():
     return run_command(["addressing/vlsm.py"], "Regenerating VLSM Addressing Plan & Tables")
 
 def task_test():
-    return run_command(["tests/test_vlsm.py"], "Executing VLSM Unit Tests")
+    ok1 = run_command(["tests/test_vlsm.py"], "Executing VLSM Unit Tests")
+    ok2 = run_command(["tests/test_topology.py"], "Executing Topology & Cabling Verification Suite")
+    return ok1 and ok2
 
 def task_lint():
     return run_command(["verification/config_linter.py"], "Auditing Device Configurations via Linter")

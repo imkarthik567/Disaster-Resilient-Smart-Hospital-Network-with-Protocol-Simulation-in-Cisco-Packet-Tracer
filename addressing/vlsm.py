@@ -321,7 +321,7 @@ def generate_ip_table_csv(allocations: list, filepath: str):
         name = a["name"]
         prefix = a["prefix"]
 
-        if prefix >= 31:
+        if prefix >= 30:
             # Point to point or loopback
             if prefix == 30:
                 hosts = list(net.hosts())
@@ -367,39 +367,86 @@ def generate_ip_table_csv(allocations: list, filepath: str):
             rows.append({"ip": svi_d1_ip, "mask": mask_str, "device": "SW-D3",      "interface": f"Vlan{vlan}", "role": "Reserved SVI Redundancy Expansion (.2)", "vlan": vlan, "site": site})
             rows.append({"ip": svi_d2_ip, "mask": mask_str, "device": "SW-D3",      "interface": f"Vlan{vlan}", "role": "Reserved SVI Redundancy Expansion (.3)", "vlan": vlan, "site": site})
 
-        # Static Infrastructure assignments per VLAN:
+        # Static Infrastructure and End-Device assignments per VLAN:
         if vlan == 50 and site == "Main Hospital":
-            rows.append({"ip": str(ipaddress.IPv4Address(net_int + 4)), "mask": mask_str, "device": "SRV-CENTRAL", "interface": "NIC0", "role": "Internal Primary DNS Server (records.hospital.local)", "vlan": 50, "site": site})
-            rows.append({"ip": str(ipaddress.IPv4Address(net_int + 5)), "mask": mask_str, "device": "SRV-CENTRAL", "interface": "NIC0", "role": "Central DHCP Server Pool Provider", "vlan": 50, "site": site})
-            rows.append({"ip": str(ipaddress.IPv4Address(net_int + 6)), "mask": mask_str, "device": "SRV-CENTRAL", "interface": "NIC0", "role": "Hospital Intranet & EHR Web Portal (HTTP/HTTPS)", "vlan": 50, "site": site})
-            rows.append({"ip": str(ipaddress.IPv4Address(net_int + 7)), "mask": mask_str, "device": "SRV-PACS",    "interface": "NIC0", "role": "PACS Medical Imaging Archive (MRI/CT Studies)", "vlan": 50, "site": site})
-            rows.append({"ip": str(ipaddress.IPv4Address(net_int + 8)), "mask": mask_str, "device": "SRV-BACKUP",  "interface": "NIC0", "role": "Disaster Recovery Database Replication Target", "vlan": 50, "site": site})
+            rows.append({"ip": str(ipaddress.IPv4Address(net_int + 4)), "mask": mask_str, "device": "SRV-CENTRAL", "interface": "FastEthernet0", "role": "Central Server (DNS/DHCP/EHR Web Portal)", "vlan": 50, "site": site})
+            rows.append({"ip": str(ipaddress.IPv4Address(net_int + 7)), "mask": mask_str, "device": "SRV-PACS",    "interface": "FastEthernet0", "role": "PACS Medical Imaging Archive (MRI/CT Studies)", "vlan": 50, "site": site})
+            rows.append({"ip": str(ipaddress.IPv4Address(net_int + 8)), "mask": mask_str, "device": "SRV-BACKUP",  "interface": "FastEthernet0", "role": "Disaster Recovery Database Replication Target", "vlan": 50, "site": site})
 
         elif vlan == 10 and site == "Main Hospital":
-            # SBC Nodes in ICU
-            rows.append({"ip": str(ipaddress.IPv4Address(net_int + 10)), "mask": mask_str, "device": "SBC-ICU-101", "interface": "IoTEth0", "role": "Bedside IoT Telemetry Node (Bed 101 - Vitals)", "vlan": 10, "site": site})
-            rows.append({"ip": str(ipaddress.IPv4Address(net_int + 11)), "mask": mask_str, "device": "SBC-ICU-102", "interface": "IoTEth0", "role": "Bedside IoT Telemetry Node (Bed 102 - Vitals)", "vlan": 10, "site": site})
-            rows.append({"ip": str(ipaddress.IPv4Address(net_int + 12)), "mask": mask_str, "device": "SBC-ICU-103", "interface": "IoTEth0", "role": "Bedside IoT Telemetry Node (Bed 103 - Vitals)", "vlan": 10, "site": site})
-            rows.append({"ip": str(ipaddress.IPv4Address(net_int + 13)), "mask": mask_str, "device": "SBC-ICU-104", "interface": "IoTEth0", "role": "Bedside IoT Telemetry Node (Bed 104 - Vitals)", "vlan": 10, "site": site})
-            rows.append({"ip": str(ipaddress.IPv4Address(net_int + 14)), "mask": mask_str, "device": "PC-ICU-NURSE", "interface": "FastEthernet0", "role": "ICU Central Nursing Monitoring Station", "vlan": 10, "site": site})
+            # 3 SBC sensor nodes + 3 clinical hosts in ICU
+            rows.append({"ip": str(ipaddress.IPv4Address(net_int + 10)), "mask": mask_str, "device": "SBC-ICU-101", "interface": "FastEthernet0", "role": "Bedside IoT Telemetry Node (Bed 101 - Vitals)", "vlan": 10, "site": site})
+            rows.append({"ip": str(ipaddress.IPv4Address(net_int + 11)), "mask": mask_str, "device": "SBC-ICU-102", "interface": "FastEthernet0", "role": "Bedside IoT Telemetry Node (Bed 102 - Vitals)", "vlan": 10, "site": site})
+            rows.append({"ip": str(ipaddress.IPv4Address(net_int + 12)), "mask": mask_str, "device": "SBC-ICU-103", "interface": "FastEthernet0", "role": "Bedside IoT Telemetry Node (Bed 103 - Vitals)", "vlan": 10, "site": site})
+            rows.append({"ip": str(ipaddress.IPv4Address(net_int + 13)), "mask": mask_str, "device": "PC-ICU-NURSE", "interface": "FastEthernet0", "role": "ICU Central Nursing Monitoring Station", "vlan": 10, "site": site})
+            rows.append({"ip": str(ipaddress.IPv4Address(net_int + 14)), "mask": mask_str, "device": "PC-ICU-DOC1",  "interface": "FastEthernet0", "role": "ICU Attending Physician Workstation 1", "vlan": 10, "site": site})
+            rows.append({"ip": str(ipaddress.IPv4Address(net_int + 15)), "mask": mask_str, "device": "PC-ICU-DOC2",  "interface": "FastEthernet0", "role": "ICU Attending Physician Workstation 2", "vlan": 10, "site": site})
 
-        elif vlan == 20:
-            # Surgery static devices
-            rows.append({"ip": str(ipaddress.IPv4Address(net_int + 10)), "mask": mask_str, "device": "PC-THEATRE-1", "interface": "FastEthernet0", "role": "Operating Theatre 1 PACS Viewer Workstation", "vlan": 20, "site": site})
-            rows.append({"ip": str(ipaddress.IPv4Address(net_int + 11)), "mask": mask_str, "device": "PC-THEATRE-2", "interface": "FastEthernet0", "role": "Operating Theatre 2 PACS Viewer Workstation", "vlan": 20, "site": site})
+        elif vlan == 20 and site == "Main Hospital":
+            # 2 SBC sensor nodes + 3 surgical hosts in Surgery
+            rows.append({"ip": str(ipaddress.IPv4Address(net_int + 10)), "mask": mask_str, "device": "SBC-SURG-201", "interface": "FastEthernet0", "role": "OR 1 Anesthesia & Ventilator Telemetry", "vlan": 20, "site": site})
+            rows.append({"ip": str(ipaddress.IPv4Address(net_int + 11)), "mask": mask_str, "device": "SBC-SURG-202", "interface": "FastEthernet0", "role": "OR 2 Surgical Vital Signs Telemetry", "vlan": 20, "site": site})
+            rows.append({"ip": str(ipaddress.IPv4Address(net_int + 12)), "mask": mask_str, "device": "PC-THEATRE-1", "interface": "FastEthernet0", "role": "Operating Theatre 1 PACS Viewer Workstation", "vlan": 20, "site": site})
+            rows.append({"ip": str(ipaddress.IPv4Address(net_int + 13)), "mask": mask_str, "device": "PC-THEATRE-2", "interface": "FastEthernet0", "role": "Operating Theatre 2 PACS Viewer Workstation", "vlan": 20, "site": site})
+            rows.append({"ip": str(ipaddress.IPv4Address(net_int + 14)), "mask": mask_str, "device": "PC-THEATRE-3", "interface": "FastEthernet0", "role": "Surgical Consultation & Telemetry Display", "vlan": 20, "site": site})
 
-        elif vlan == 99:
-            # Management infrastructure
-            if site == "Main Hospital":
-                rows.append({"ip": str(ipaddress.IPv4Address(net_int + 10)), "mask": mask_str, "device": "SW-A1", "interface": "Vlan99", "role": "SW-A1 Access Switch Management In-Band SVI", "vlan": 99, "site": site})
-                rows.append({"ip": str(ipaddress.IPv4Address(net_int + 11)), "mask": mask_str, "device": "SW-A2", "interface": "Vlan99", "role": "SW-A2 Access Switch Management In-Band SVI", "vlan": 99, "site": site})
-                rows.append({"ip": str(ipaddress.IPv4Address(net_int + 12)), "mask": mask_str, "device": "SW-A3", "interface": "Vlan99", "role": "SW-A3 Access Switch Management In-Band SVI", "vlan": 99, "site": site})
-                rows.append({"ip": str(ipaddress.IPv4Address(net_int + 13)), "mask": mask_str, "device": "SW-A4", "interface": "Vlan99", "role": "SW-A4 Access Switch Management In-Band SVI", "vlan": 99, "site": site})
-            else:
-                rows.append({"ip": str(ipaddress.IPv4Address(net_int + 10)), "mask": mask_str, "device": "SW-A5", "interface": "Vlan99", "role": "SW-A5 Access Switch Management In-Band SVI", "vlan": 99, "site": site})
+        elif vlan == 30 and site == "Main Hospital":
+            # 3 administrative hosts
+            rows.append({"ip": str(ipaddress.IPv4Address(net_int + 10)), "mask": mask_str, "device": "PC-ADMIN-301", "interface": "FastEthernet0", "role": "Main Hospital Admissions & Billing PC", "vlan": 30, "site": site})
+            rows.append({"ip": str(ipaddress.IPv4Address(net_int + 11)), "mask": mask_str, "device": "PC-ADMIN-302", "interface": "FastEthernet0", "role": "Medical Records Administration PC", "vlan": 30, "site": site})
+            rows.append({"ip": str(ipaddress.IPv4Address(net_int + 12)), "mask": mask_str, "device": "PC-ADMIN-303", "interface": "FastEthernet0", "role": "Hospital Executive Director PC", "vlan": 30, "site": site})
 
-        elif vlan == 50 and site == "Remote Clinic":
-            rows.append({"ip": str(ipaddress.IPv4Address(net_int + 4)), "mask": mask_str, "device": "SRV-CACHE", "interface": "NIC0", "role": "Remote Clinic Local Cache & EHR Proxy Server", "vlan": 50, "site": site})
+        elif vlan == 40 and site == "Main Hospital":
+            # 1 AP + 3 guest wireless hosts
+            rows.append({"ip": str(ipaddress.IPv4Address(net_int + 10)), "mask": mask_str, "device": "AP-GUEST",       "interface": "Port0", "role": "Main Hospital Guest Wi-Fi Access Point", "vlan": 40, "site": site})
+            rows.append({"ip": str(ipaddress.IPv4Address(net_int + 11)), "mask": mask_str, "device": "LAPTOP-GUEST-1", "interface": "Wireless0", "role": "Visitor Laptop 1 (Waiting Lounge)", "vlan": 40, "site": site})
+            rows.append({"ip": str(ipaddress.IPv4Address(net_int + 12)), "mask": mask_str, "device": "LAPTOP-GUEST-2", "interface": "Wireless0", "role": "Visitor Laptop 2 (Cafeteria)", "vlan": 40, "site": site})
+            rows.append({"ip": str(ipaddress.IPv4Address(net_int + 13)), "mask": mask_str, "device": "LAPTOP-GUEST-3", "interface": "Wireless0", "role": "Visitor Laptop 3 (Family Lounge)", "vlan": 40, "site": site})
+
+        elif vlan == 60 and site == "Main Hospital":
+            # 3 IP phones
+            rows.append({"ip": str(ipaddress.IPv4Address(net_int + 10)), "mask": mask_str, "device": "PHONE-ICU-601",   "interface": "SwitchPort", "role": "Cisco 7960 IP Phone Ext 1001 (ICU Desk)", "vlan": 60, "site": site})
+            rows.append({"ip": str(ipaddress.IPv4Address(net_int + 11)), "mask": mask_str, "device": "PHONE-SURG-602",  "interface": "SwitchPort", "role": "Cisco 7960 IP Phone Ext 1002 (Surgery Desk)", "vlan": 60, "site": site})
+            rows.append({"ip": str(ipaddress.IPv4Address(net_int + 12)), "mask": mask_str, "device": "PHONE-ADMIN-603", "interface": "SwitchPort", "role": "Cisco 7960 IP Phone Ext 1003 (Reception Desk)", "vlan": 60, "site": site})
+
+        elif vlan == 99 and site == "Main Hospital":
+            # Management infrastructure + NOC host
+            rows.append({"ip": str(ipaddress.IPv4Address(net_int + 10)), "mask": mask_str, "device": "SW-A1",      "interface": "Vlan99", "role": "SW-A1 Access Switch Management In-Band SVI", "vlan": 99, "site": site})
+            rows.append({"ip": str(ipaddress.IPv4Address(net_int + 11)), "mask": mask_str, "device": "SW-A2",      "interface": "Vlan99", "role": "SW-A2 Access Switch Management In-Band SVI", "vlan": 99, "site": site})
+            rows.append({"ip": str(ipaddress.IPv4Address(net_int + 12)), "mask": mask_str, "device": "SW-A3",      "interface": "Vlan99", "role": "SW-A3 Access Switch Management In-Band SVI", "vlan": 99, "site": site})
+            rows.append({"ip": str(ipaddress.IPv4Address(net_int + 13)), "mask": mask_str, "device": "SW-A4",      "interface": "Vlan99", "role": "SW-A4 Access Switch Management In-Band SVI", "vlan": 99, "site": site})
+            rows.append({"ip": str(ipaddress.IPv4Address(net_int + 20)), "mask": mask_str, "device": "PC-NOC-MGT", "interface": "FastEthernet0", "role": "Network Operations Center Management Console", "vlan": 99, "site": site})
+
+        elif vlan == 10 and site == "Remote Clinic":
+            # Remote clinic clinical hosts + cache server
+            rows.append({"ip": str(ipaddress.IPv4Address(net_int + 4)),  "mask": mask_str, "device": "SRV-CACHE",          "interface": "FastEthernet0", "role": "Remote Clinic Local Cache & EHR Proxy Server", "vlan": 10, "site": site})
+            rows.append({"ip": str(ipaddress.IPv4Address(net_int + 10)), "mask": mask_str, "device": "PC-CLINIC-CONSULT1", "interface": "FastEthernet0", "role": "Clinic Consultation Room 1 Workstation", "vlan": 10, "site": site})
+            rows.append({"ip": str(ipaddress.IPv4Address(net_int + 11)), "mask": mask_str, "device": "PC-CLINIC-CONSULT2", "interface": "FastEthernet0", "role": "Clinic Consultation Room 2 Workstation", "vlan": 10, "site": site})
+            rows.append({"ip": str(ipaddress.IPv4Address(net_int + 12)), "mask": mask_str, "device": "PC-CLINIC-TRIAGE",   "interface": "FastEthernet0", "role": "Clinic Emergency Triage Station", "vlan": 10, "site": site})
+
+        elif vlan == 30 and site == "Remote Clinic":
+            # Remote clinic admin hosts
+            rows.append({"ip": str(ipaddress.IPv4Address(net_int + 10)), "mask": mask_str, "device": "PC-CLINIC-ADM1",  "interface": "FastEthernet0", "role": "Clinic Reception Registration Terminal", "vlan": 30, "site": site})
+            rows.append({"ip": str(ipaddress.IPv4Address(net_int + 11)), "mask": mask_str, "device": "PC-CLINIC-ADM2",  "interface": "FastEthernet0", "role": "Clinic Billing & Records Terminal", "vlan": 30, "site": site})
+            rows.append({"ip": str(ipaddress.IPv4Address(net_int + 12)), "mask": mask_str, "device": "PC-CLINIC-PHARM", "interface": "FastEthernet0", "role": "Clinic Pharmacy Dispensing Terminal", "vlan": 30, "site": site})
+
+        elif vlan == 40 and site == "Remote Clinic":
+            # Remote clinic guest AP + 3 laptops
+            rows.append({"ip": str(ipaddress.IPv4Address(net_int + 10)), "mask": mask_str, "device": "AP-CLINIC-GUEST", "interface": "Port0", "role": "Remote Clinic Guest Wi-Fi Access Point", "vlan": 40, "site": site})
+            rows.append({"ip": str(ipaddress.IPv4Address(net_int + 11)), "mask": mask_str, "device": "LAPTOP-CLINIC-G1", "interface": "Wireless0", "role": "Clinic Visitor Laptop 1", "vlan": 40, "site": site})
+            rows.append({"ip": str(ipaddress.IPv4Address(net_int + 12)), "mask": mask_str, "device": "LAPTOP-CLINIC-G2", "interface": "Wireless0", "role": "Clinic Visitor Laptop 2", "vlan": 40, "site": site})
+            rows.append({"ip": str(ipaddress.IPv4Address(net_int + 13)), "mask": mask_str, "device": "LAPTOP-CLINIC-G3", "interface": "Wireless0", "role": "Clinic Visitor Laptop 3", "vlan": 40, "site": site})
+
+        elif vlan == 60 and site == "Remote Clinic":
+            # Remote clinic IP phones
+            rows.append({"ip": str(ipaddress.IPv4Address(net_int + 10)), "mask": mask_str, "device": "PHONE-CLINIC-601", "interface": "SwitchPort", "role": "Cisco 7960 IP Phone Ext 2001 (Clinic Reception)", "vlan": 60, "site": site})
+            rows.append({"ip": str(ipaddress.IPv4Address(net_int + 11)), "mask": mask_str, "device": "PHONE-CLINIC-602", "interface": "SwitchPort", "role": "Cisco 7960 IP Phone Ext 2002 (Clinic Doctor Desk)", "vlan": 60, "site": site})
+            rows.append({"ip": str(ipaddress.IPv4Address(net_int + 12)), "mask": mask_str, "device": "PHONE-CLINIC-603", "interface": "SwitchPort", "role": "Cisco 7960 IP Phone Ext 2003 (Clinic Triage Desk)", "vlan": 60, "site": site})
+
+        elif vlan == 99 and site == "Remote Clinic":
+            # Remote clinic switch SVI + clinic admin PC
+            rows.append({"ip": str(ipaddress.IPv4Address(net_int + 10)), "mask": mask_str, "device": "SW-A5",         "interface": "Vlan99", "role": "SW-A5 Access Switch Management In-Band SVI", "vlan": 99, "site": site})
+            rows.append({"ip": str(ipaddress.IPv4Address(net_int + 11)), "mask": mask_str, "device": "PC-CLINIC-MGT", "interface": "FastEthernet0", "role": "Clinic Local Management Administrator PC", "vlan": 99, "site": site})
 
     fieldnames = ["ip", "mask", "device", "interface", "role", "vlan", "site"]
     with open(filepath, "w", newline="", encoding="utf-8") as f:

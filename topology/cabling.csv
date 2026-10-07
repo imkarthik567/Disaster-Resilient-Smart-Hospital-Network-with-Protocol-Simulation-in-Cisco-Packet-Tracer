@@ -1,0 +1,59 @@
+Link-ID,Device A,Interface A,Device B,Interface B,Cable type,Layer,VLANs carried,IP/subnet if routed,Purpose
+LINK-WAN-01,R1,Serial0/0/0,R2,Serial0/0/0,Serial DCE (clock rate 128000 on R1),L3 routed,-,172.16.8.80/30 (R1: 172.16.8.81 DCE / R2: 172.16.8.82 DTE),Primary Inter-Site WAN Circuit (OSPF Area 0 Backbone)
+LINK-WAN-02,R1,Serial0/0/1,R2,Serial0/0/1,Serial DCE (clock rate 128000 on R1),L3 routed,-,172.16.8.84/30 (R1: 172.16.8.85 DCE / R2: 172.16.8.86 DTE),Secondary Standby WAN Circuit (EIGRP AS 100 Floating AD 115)
+LINK-CORE-01,R1,GigabitEthernet0/0,SW-D1,GigabitEthernet0/2,Copper Straight-Through,L3 routed,-,172.16.8.88/30 (SW-D1: 172.16.8.89 / R1: 172.16.8.90),Main Hospital Distribution SW-D1 Routed Transit Uplink to R1
+LINK-CORE-02,R1,GigabitEthernet0/1,SW-D2,GigabitEthernet0/2,Copper Straight-Through,L3 routed,-,172.16.8.92/30 (SW-D2: 172.16.8.93 / R1: 172.16.8.94),Main Hospital Distribution SW-D2 Routed Transit Uplink to R1
+LINK-CORE-03,R2,GigabitEthernet0/0,SW-D3,GigabitEthernet0/1,Copper Straight-Through,L3 routed,-,172.16.8.96/30 (SW-D3: 172.16.8.97 / R2: 172.16.8.98),Remote Clinic Distribution SW-D3 Routed Transit Uplink to R2
+LINK-EDGE-01,R1,GigabitEthernet0/2,EDGE-ISP,GigabitEthernet0/0,Copper Straight-Through,L3 routed,-,172.16.8.100/30 (EDGE-ISP: 172.16.8.101 / R1: 172.16.8.102),Internet Edge NAT/PAT Overload Uplink to Public ISP Gateway
+LINK-DIST-01,SW-D1,FastEthernet0/23,SW-D2,FastEthernet0/23,Copper Crossover,L2 trunk,10 20 30 40 50 60 99 (Native: 999),-,Distribution Inter-Switch Trunk LACP Port-Channel 1 Bundle (Member 1)
+LINK-DIST-02,SW-D1,FastEthernet0/24,SW-D2,FastEthernet0/24,Copper Crossover,L2 trunk,10 20 30 40 50 60 99 (Native: 999),-,Distribution Inter-Switch Trunk LACP Port-Channel 1 Bundle (Member 2)
+LINK-TRUNK-01,SW-D1,FastEthernet0/1,SW-A1,GigabitEthernet0/1,Copper Straight-Through,L2 trunk,10 60 99 (Native: 999),-,ICU Access Switch SW-A1 Primary 802.1Q Trunk Uplink to SW-D1
+LINK-TRUNK-02,SW-D2,FastEthernet0/1,SW-A1,GigabitEthernet0/2,Copper Straight-Through,L2 trunk,10 60 99 (Native: 999),-,ICU Access Switch SW-A1 Secondary 802.1Q Trunk Uplink to SW-D2 (PVST+ Standby)
+LINK-TRUNK-03,SW-D1,FastEthernet0/2,SW-A2,GigabitEthernet0/1,Copper Straight-Through,L2 trunk,20 60 99 (Native: 999),-,Surgery Access Switch SW-A2 Primary 802.1Q Trunk Uplink to SW-D1
+LINK-TRUNK-04,SW-D2,FastEthernet0/2,SW-A2,GigabitEthernet0/2,Copper Straight-Through,L2 trunk,20 60 99 (Native: 999),-,Surgery Access Switch SW-A2 Secondary 802.1Q Trunk Uplink to SW-D2 (PVST+ Standby)
+LINK-TRUNK-05,SW-D2,FastEthernet0/3,SW-A3,GigabitEthernet0/1,Copper Straight-Through,L2 trunk,30 60 99 (Native: 999),-,Admin Access Switch SW-A3 Primary 802.1Q Trunk Uplink to SW-D2
+LINK-TRUNK-06,SW-D1,FastEthernet0/3,SW-A3,GigabitEthernet0/2,Copper Straight-Through,L2 trunk,30 60 99 (Native: 999),-,Admin Access Switch SW-A3 Secondary 802.1Q Trunk Uplink to SW-D1 (PVST+ Standby)
+LINK-TRUNK-07,SW-D2,FastEthernet0/4,SW-A4,GigabitEthernet0/1,Copper Straight-Through,L2 trunk,40 99 (Native: 999),-,Guest Wi-Fi Access Switch SW-A4 Primary 802.1Q Trunk Uplink to SW-D2
+LINK-TRUNK-08,SW-D1,FastEthernet0/4,SW-A4,GigabitEthernet0/2,Copper Straight-Through,L2 trunk,40 99 (Native: 999),-,Guest Wi-Fi Access Switch SW-A4 Secondary 802.1Q Trunk Uplink to SW-D1 (PVST+ Standby)
+LINK-TRUNK-09,SW-D3,FastEthernet0/23,SW-A5,GigabitEthernet0/1,Copper Straight-Through,L2 trunk,10 30 40 60 99 (Native: 999),-,Clinic Access Switch SW-A5 Primary 802.1Q Trunk Uplink to SW-D3
+LINK-TRUNK-10,SW-D3,FastEthernet0/24,SW-A5,GigabitEthernet0/2,Copper Straight-Through,L2 trunk,10 30 40 60 99 (Native: 999),-,Clinic Access Switch SW-A5 Redundant 802.1Q Trunk Uplink to SW-D3 (STP Alternate)
+LINK-SRV-01,SW-D1,FastEthernet0/10,SRV-CENTRAL,FastEthernet0,Copper Straight-Through,L2 access,50,172.16.7.4/26 (Gateway: 172.16.7.1),Central Hospital Server (DNS / DHCP / Intranet Web Portal)
+LINK-SRV-02,SW-D1,FastEthernet0/11,SRV-PACS,FastEthernet0,Copper Straight-Through,L2 access,50,172.16.7.7/26 (Gateway: 172.16.7.1),PACS Medical Imaging Archive Server (DICOM Storage)
+LINK-SRV-03,SW-D2,FastEthernet0/12,SRV-BACKUP,FastEthernet0,Copper Straight-Through,L2 access,50,172.16.7.8/26 (Gateway: 172.16.7.1),Disaster Recovery Database Replication Target Server
+LINK-SRV-04,SW-D3,FastEthernet0/10,SRV-CACHE,FastEthernet0,Copper Straight-Through,L2 access,10,172.16.8.36/27 (Gateway: 172.16.8.33),Remote Clinic Local EHR Cache & Offline Proxy Server
+LINK-ICU-01,SW-A1,FastEthernet0/1,SBC-ICU-101,FastEthernet0,Copper Straight-Through,L2 access,10,172.16.7.138/26 (Gateway: 172.16.7.129),Bedside IoT Telemetry Node (Bed 101 - Vitals Simulation SBC)
+LINK-ICU-02,SW-A1,FastEthernet0/2,SBC-ICU-102,FastEthernet0,Copper Straight-Through,L2 access,10,172.16.7.139/26 (Gateway: 172.16.7.129),Bedside IoT Telemetry Node (Bed 102 - Vitals Simulation SBC)
+LINK-ICU-03,SW-A1,FastEthernet0/3,SBC-ICU-103,FastEthernet0,Copper Straight-Through,L2 access,10,172.16.7.140/26 (Gateway: 172.16.7.129),Bedside IoT Telemetry Node (Bed 103 - Vitals Simulation SBC)
+LINK-ICU-04,SW-A1,FastEthernet0/4,PC-ICU-NURSE,FastEthernet0,Copper Straight-Through,L2 access,10,172.16.7.141/26 (Gateway: 172.16.7.129),ICU Central Nursing Monitoring Station Workstation
+LINK-ICU-05,SW-A1,FastEthernet0/5,PC-ICU-DOC1,FastEthernet0,Copper Straight-Through,L2 access,10,172.16.7.142/26 (Gateway: 172.16.7.129),ICU Attending Physician Clinical Workstation 1
+LINK-ICU-06,SW-A1,FastEthernet0/6,PC-ICU-DOC2,FastEthernet0,Copper Straight-Through,L2 access,10,172.16.7.143/26 (Gateway: 172.16.7.129),ICU Attending Physician Clinical Workstation 2
+LINK-ICU-07,SW-A1,FastEthernet0/7,PHONE-ICU-601,SwitchPort,Copper Straight-Through,L2 access,Voice: 60 Data: 10,172.16.6.10/25 (Gateway: 172.16.6.1),Cisco 7960 IP Phone Ext 1001 (ICU Nursing Desk)
+LINK-SURG-01,SW-A2,FastEthernet0/1,SBC-SURG-201,FastEthernet0,Copper Straight-Through,L2 access,20,172.16.7.74/26 (Gateway: 172.16.7.65),Operating Room 1 Anesthesia & Ventilator Telemetry SBC
+LINK-SURG-02,SW-A2,FastEthernet0/2,SBC-SURG-202,FastEthernet0,Copper Straight-Through,L2 access,20,172.16.7.75/26 (Gateway: 172.16.7.65),Operating Room 2 Surgical Vital Signs Telemetry SBC
+LINK-SURG-03,SW-A2,FastEthernet0/3,PC-THEATRE-1,FastEthernet0,Copper Straight-Through,L2 access,20,172.16.7.76/26 (Gateway: 172.16.7.65),Operating Theatre 1 PACS DICOM Viewer Workstation
+LINK-SURG-04,SW-A2,FastEthernet0/4,PC-THEATRE-2,FastEthernet0,Copper Straight-Through,L2 access,20,172.16.7.77/26 (Gateway: 172.16.7.65),Operating Theatre 2 PACS DICOM Viewer Workstation
+LINK-SURG-05,SW-A2,FastEthernet0/5,PC-THEATRE-3,FastEthernet0,Copper Straight-Through,L2 access,20,172.16.7.78/26 (Gateway: 172.16.7.65),Surgical Head Consultation & Telemetry Display PC
+LINK-SURG-06,SW-A2,FastEthernet0/7,PHONE-SURG-602,SwitchPort,Copper Straight-Through,L2 access,Voice: 60 Data: 20,172.16.6.11/25 (Gateway: 172.16.6.1),Cisco 7960 IP Phone Ext 1002 (Surgical Suite Reception)
+LINK-ADM-01,SW-A3,FastEthernet0/1,PC-ADMIN-301,FastEthernet0,Copper Straight-Through,L2 access,30,172.16.4.10/23 (Gateway: 172.16.4.1),Admissions & Patient Billing Terminal
+LINK-ADM-02,SW-A3,FastEthernet0/2,PC-ADMIN-302,FastEthernet0,Copper Straight-Through,L2 access,30,172.16.4.11/23 (Gateway: 172.16.4.1),Hospital Medical Records Administration Terminal
+LINK-ADM-03,SW-A3,FastEthernet0/3,PC-ADMIN-303,FastEthernet0,Copper Straight-Through,L2 access,30,172.16.4.12/23 (Gateway: 172.16.4.1),Hospital Executive Director Workstation
+LINK-ADM-04,SW-A3,FastEthernet0/7,PHONE-ADMIN-603,SwitchPort,Copper Straight-Through,L2 access,Voice: 60 Data: 30,172.16.6.12/25 (Gateway: 172.16.6.1),Cisco 7960 IP Phone Ext 1003 (Admin Front Desk)
+LINK-ADM-05,SW-A3,FastEthernet0/20,PC-NOC-MGT,FastEthernet0,Copper Straight-Through,L2 access,99,172.16.7.212/27 (Gateway: 172.16.7.193),Network Operations Center Management Console
+LINK-GST-01,SW-A4,FastEthernet0/10,AP-GUEST,Port0,Copper Straight-Through,L2 access,40,172.16.0.10/22 (Gateway: 172.16.0.1),Main Hospital Guest Wi-Fi Access Point Uplink
+LINK-GST-02,AP-GUEST,Port1,LAPTOP-GUEST-1,Wireless0,Wireless (802.11),L2 access,40,172.16.0.11/22 (DHCP Pool: 172.16.0.0/22),Guest Wi-Fi Client Laptop 1 (Waiting Lounge)
+LINK-GST-03,AP-GUEST,Port1,LAPTOP-GUEST-2,Wireless0,Wireless (802.11),L2 access,40,172.16.0.12/22 (DHCP Pool: 172.16.0.0/22),Guest Wi-Fi Client Laptop 2 (Cafeteria)
+LINK-GST-04,AP-GUEST,Port1,LAPTOP-GUEST-3,Wireless0,Wireless (802.11),L2 access,40,172.16.0.13/22 (DHCP Pool: 172.16.0.0/22),Guest Wi-Fi Client Laptop 3 (Family Lounge)
+LINK-CLN-01,SW-A5,FastEthernet0/1,PC-CLINIC-CONSULT1,FastEthernet0,Copper Straight-Through,L2 access,10,172.16.8.42/27 (Gateway: 172.16.8.33),Remote Clinic Consultation Room 1 Terminal
+LINK-CLN-02,SW-A5,FastEthernet0/2,PC-CLINIC-CONSULT2,FastEthernet0,Copper Straight-Through,L2 access,10,172.16.8.43/27 (Gateway: 172.16.8.33),Remote Clinic Consultation Room 2 Terminal
+LINK-CLN-03,SW-A5,FastEthernet0/3,PC-CLINIC-TRIAGE,FastEthernet0,Copper Straight-Through,L2 access,10,172.16.8.44/27 (Gateway: 172.16.8.33),Remote Clinic Emergency Triage Station
+LINK-CLN-04,SW-A5,FastEthernet0/4,PC-CLINIC-ADM1,FastEthernet0,Copper Straight-Through,L2 access,30,172.16.8.10/27 (Gateway: 172.16.8.1),Remote Clinic Reception & Registration PC
+LINK-CLN-05,SW-A5,FastEthernet0/5,PC-CLINIC-ADM2,FastEthernet0,Copper Straight-Through,L2 access,30,172.16.8.11/27 (Gateway: 172.16.8.1),Remote Clinic Billing & Records Terminal
+LINK-CLN-06,SW-A5,FastEthernet0/6,PC-CLINIC-PHARM,FastEthernet0,Copper Straight-Through,L2 access,30,172.16.8.12/27 (Gateway: 172.16.8.1),Remote Clinic Pharmacy Dispensing PC
+LINK-CLN-07,SW-A5,FastEthernet0/7,PHONE-CLINIC-601,SwitchPort,Copper Straight-Through,L2 access,Voice: 60 Data: 30,172.16.7.234/27 (Gateway: 172.16.7.225),Cisco 7960 IP Phone Ext 2001 (Reception)
+LINK-CLN-08,SW-A5,FastEthernet0/8,PHONE-CLINIC-602,SwitchPort,Copper Straight-Through,L2 access,Voice: 60 Data: 10,172.16.7.235/27 (Gateway: 172.16.7.225),Cisco 7960 IP Phone Ext 2002 (Doctor Desk)
+LINK-CLN-09,SW-A5,FastEthernet0/9,PHONE-CLINIC-603,SwitchPort,Copper Straight-Through,L2 access,Voice: 60 Data: 10,172.16.7.236/27 (Gateway: 172.16.7.225),Cisco 7960 IP Phone Ext 2003 (Triage Desk)
+LINK-CLN-10,SW-A5,FastEthernet0/10,AP-CLINIC-GUEST,Port0,Copper Straight-Through,L2 access,40,172.16.6.138/25 (Gateway: 172.16.6.129),Remote Clinic Guest Wi-Fi Access Point Uplink
+LINK-CLN-11,AP-CLINIC-GUEST,Port1,LAPTOP-CLINIC-G1,Wireless0,Wireless (802.11),L2 access,40,172.16.6.139/25 (DHCP Pool: 172.16.6.128/25),Clinic Visitor Laptop 1
+LINK-CLN-12,AP-CLINIC-GUEST,Port1,LAPTOP-CLINIC-G2,Wireless0,Wireless (802.11),L2 access,40,172.16.6.140/25 (DHCP Pool: 172.16.6.128/25),Clinic Visitor Laptop 2
+LINK-CLN-13,AP-CLINIC-GUEST,Port1,LAPTOP-CLINIC-G3,Wireless0,Wireless (802.11),L2 access,40,172.16.6.141/25 (DHCP Pool: 172.16.6.128/25),Clinic Visitor Laptop 3
+LINK-CLN-14,SW-A5,FastEthernet0/20,PC-CLINIC-MGT,FastEthernet0,Copper Straight-Through,L2 access,99,172.16.8.75/28 (Gateway: 172.16.8.65),Remote Clinic Local Administrator Console
