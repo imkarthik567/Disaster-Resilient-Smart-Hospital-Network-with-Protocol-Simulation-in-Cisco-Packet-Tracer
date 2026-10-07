@@ -37,10 +37,13 @@ def task_addressing():
 def task_test():
     ok1 = run_command(["tests/test_vlsm.py"], "Executing VLSM Unit Tests")
     ok2 = run_command(["tests/test_topology.py"], "Executing Topology & Cabling Verification Suite")
-    return ok1 and ok2
+    ok3 = run_command(["tests/test_check_topology.py"], "Executing Topology Validator & Failure-Injection Tests")
+    return ok1 and ok2 and ok3
 
 def task_lint():
-    return run_command(["verification/config_linter.py"], "Auditing Device Configurations via Linter")
+    ok1 = run_command(["verification/check_topology.py"], "Validating Topology & Interconnect Cable Matrix")
+    ok2 = run_command(["verification/config_linter.py"], "Auditing Device Configurations via Linter")
+    return ok1 and ok2
 
 def task_bench():
     return run_command(["sim/benchmark_harness.py"], "Running Protocol Benchmark Sweep Harness")
