@@ -1,0 +1,197 @@
+! ==============================================================================
+! DEVICE:       R1 (Main Hospital - Core Router)
+! MODEL:        Cisco 2911 Integrated Services Router
+! MODULES:      HWIC-2T installed in Slot 0 (provides Serial0/0/0 & Serial0/0/1)
+! WAN PRIMARY:  Serial0/0/0 (DCE) -> R2 Se0/0/0 [OSPF Area 0, AD 110]
+! WAN BACKUP:   Serial0/0/1 (DCE) -> R2 Se0/0/1 [EIGRP AS 100, AD adjusted to 120]
+! LAN LINKS:    Gig0/0 -> SW-D1 Gi0/2, Gig0/1 -> SW-D2 Gi0/2
+! INTERNET:     Gig0/2 -> ISP Cloud (203.0.113.1) with NAT Overload (PAT)
+! ==============================================================================
+
+enable
+configure terminal
+
+hostname R1
+
+! --- Disable DNS Lookup & Set Banner ---
+no ip domain-lookup
+banner motd ^C
+====================================================================
+  R1: Main Hospital Core Router - VIT SCOPE CN Project
+  Primary Backbone Gateway with Multi-Area OSPF & EIGRP Failover
+====================================================================
+^C
+
+! --- Management Credentials & Line Security ---
+enable secret class
+line con 0
+ password cisco
+ login
+ logging synchronous
+ exec-timeout 15 0
+line vty 0 4
+ password cisco
+ login
+ transport input ssh telnet
+ exec-timeout 15 0
+exit
+
+! --- Loopback0 Interface (OSPF Router ID) ---
+interface Loopback0
+ description OSPF_Router_ID_and_Management
+ ip address 172.16.4.200 255.255.255.255
+ no shutdown
+exit
+
+! --- LAN Point-to-Point Uplinks to Distribution Switches ---
+interface GigabitEthernet0/0
+ description Link_to_SW-D1_Gi0/2
+ ip address 172.16.5.2 255.255.255.252
+ ip nat inside
+ no shutdown
+exit
+
+interface GigabitEthernet0/1
+ description Link_to_SW-D2_Gi0/2
+ ip address 172.16.5.6 255.255.255.252
+ ip nat inside
+ no shutdown
+exit
+
+! --- Primary WAN Link (Serial0/0/0 - DCE): OSPF Area 0 ---
+interface Serial0/0/0
+ description Primary_WAN_Link_to_R2_Se0/0/0_OSPF_Area0
+ ip address 172.16.4.193 255.255.255.252
+ clock rate 128000
+ bandwidth 2048
+ ip nat inside
+ no shutdown
+exit
+
+! --- Secondary WAN Link (Serial0/0/1 - DCE): Standby EIGRP AS 100 ---
+interface Serial0/0/1
+ description Standby_WAN_Link_to_R2_Se0/0/1_EIGRP_Backup
+ ip address 172.16.4.197 255.255.255.252
+ clock rate 128000
+ bandwidth 1544
+ ip nat inside
+ no shutdown
+exit
+
+! --- Internet Edge Interface (GigabitEthernet0/2): ISP Gateway ---
+interface GigabitEthernet0/2
+ description Internet_Edge_Uplink_to_ISP
+ ip address 203.0.113.2 255.255.255.252
+ ip nat outside
+ no shutdown
+exit
+
+! --- Default Route to ISP ---
+ip route 0.0.0.0 0.0.0.0 203.0.113.1
+
+! --- NAT Overload (PAT) Configuration ---
+ip access-list standard NAT-ACL
+ remark Permit entire hospital internal 172.16.0.0/16 address space
+ permit 172.16.0.0 0.0.255.255
+exit
+
+ip nat inside source list NAT-ACL interface GigabitEthernet0/2 overload
+
+! --- Dynamic Routing: Multi-Area OSPF Process 1 (Primary Path) ---
+router ospf 1
+ router-id 172.16.4.200
+ ! Propagate default route to hospital distribution switches and Remote Clinic
+ default-information originate
+ ! Core Backbone Area 0
+ network 172.16.4.200 0.0.0.0 area 0       ! Loopback0
+ network 172.16.4.192 0.0.0.3 area 0       ! Primary Serial Se0/0/0
+ network 172.16.5.0 0.0.0.3 area 0         ! Link to SW-D1
+ network 172.16.5.4 0.0.0.3 area 0         ! Link to SW-D2
+exit
+
+! --- Dynamic Routing: EIGRP AS 100 (Secondary Standby Path) ---
+! CRITICAL: Default EIGRP AD is 90, which beats OSPF (110).
+! We raise EIGRP Internal AD to 120 so OSPF is ALWAYS preferred when primary is UP.
+router eigrp 100
+ no auto-summary
+ network 172.16.4.196 0.0.0.3              ! Secondary Serial Se0/0/1
+ network 172.16.5.0 0.0.0.3                ! Link to SW-D1
+ network 172.16.5.4 0.0.0.3                ! Link to SW-D2
+ network 172.16.0.0 0.0.255.255            ! Hospital subnets
+ ! Raise AD: internal=120, external=170 (Packet Tracer 8.x supports this)
+ distance eigrp 120 170
+exit
+
+! --- Quality of Service (QoS): Modular QoS CLI (MQC) ---
+class-map match-any VITALS-VOICE
+ match ip dscp ef
+exit
+
+class-map match-any IMAGING
+ match ip dscp af31
+exit
+
+policy-map HOSPITAL-QOS
+ class VITALS-VOICE
+  priority percent 30
+ class IMAGING
+  bandwidth percent 40
+ class class-default
+  fair-queue
+exit
+
+! Apply QoS policy egress on WAN links
+interface Serial0/0/0
+ service-policy output HOSPITAL-QOS
+exit
+
+interface Serial0/0/1
+ service-policy output HOSPITAL-QOS
+exit
+
+end
+write memory
+
+! ==============================================================================
+! VERIFICATION COMMANDS & EXPECTED OUTPUT
+! ==============================================================================
+!
+! 1. Verify Active Routing Table (Normal State - Primary Link UP):
+!    R1# show ip route
+!    EXPECTED OUTPUT:
+!    Gateway of last resort is 203.0.113.1 to network 0.0.0.0
+!    O IA 172.16.4.64/27 [110/...] via 172.16.4.194, Serial0/0/0  (Remote Clinical)
+!    O IA 172.16.4.96/27 [110/...] via 172.16.4.194, Serial0/0/0  (Remote Admin)
+!    O    172.16.0.0/23 [110/...] via 172.16.5.6, GigabitEthernet0/1 (Guest)
+!    O    172.16.3.128/26 [110/...] via 172.16.5.2, GigabitEthernet0/0 (ICU)
+!    S*   0.0.0.0/0 [1/0] via 203.0.113.1
+!    (Notice: Remote subnets learned via OSPF Se0/0/0, NOT EIGRP)
+!
+! 2. Verify EIGRP Topology Table (Standby Routes Ready in Feasible Successor state):
+!    R1# show ip eigrp topology
+!    EXPECTED OUTPUT:
+!    IP-EIGRP Topology Table for AS(100)/ID(172.16.4.200)
+!    P 172.16.4.64/27, 1 successors, FD is ..., via 172.16.4.198 (Serial0/0/1)
+!
+! 3. Test Failover Reconvergence (Simulating Cable Cut on Primary WAN):
+!    R1(config)# interface Serial0/0/0
+!    R1(config-if)# shutdown
+!    Wait ~30 seconds for OSPF dead-interval expiry, then check routing table:
+!    R1# show ip route
+!    EXPECTED OUTPUT:
+!    D    172.16.4.64/27 [120/...] via 172.16.4.198, Serial0/0/1  <-- EIGRP TAKES OVER!
+!    D    172.16.4.96/27 [120/...] via 172.16.4.198, Serial0/0/1
+!
+! 4. Restore Primary Link:
+!    R1(config)# interface Serial0/0/0
+!    R1(config-if)# no shutdown
+!    R1# show ip route
+!    EXPECTED OUTPUT:
+!    O IA 172.16.4.64/27 [110/...] via 172.16.4.194, Serial0/0/0  <-- OSPF RESTORED!
+!
+! 5. Verify NAT Translations:
+!    R1# show ip nat translations
+!    EXPECTED OUTPUT:
+!    Pro Inside global         Inside local          Outside local         Outside global
+!    tcp 203.0.113.2:1024      172.16.2.10:1024      8.8.8.8:80            8.8.8.8:80
+! ==============================================================================

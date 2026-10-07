@@ -1,0 +1,51 @@
+@startuml
+!theme plain
+title Disaster-Resilient Smart Hospital Network Topology
+footer VIT SCOPE - Computer Networks Project (Rohit Kathiravan & Karthikeyan S)
+
+cloud "Public Internet\n(EDGE-ISP: 203.0.113.1)" as ISP #LightSkyBlue
+
+package "Main Hospital Campus" {
+  node "Core Router R1\n(Cisco 2911)\nOSPF Area 0 Backbone\nEIGRP AS 100 (AD 120)" as R1 #Gold
+  
+  node "SW-D1 (L3 Switch)\nCisco 3560-24PS\nSVIs: VLAN 10,20,50,99\nSTP Root Prim (10,20,50,99)" as SWD1 #LightCyan
+  node "SW-D2 (L3 Switch)\nCisco 3560-24PS\nSVIs: VLAN 30,40,60\nSTP Root Prim (30,40,60)\nACL: BLOCK-GUEST" as SWD2 #LightCyan
+
+  node "SW-A1 (Access)\nVLAN 10: ICU\nVLAN 60: Voice" as SWA1 #AliceBlue
+  node "SW-A2 (Access)\nVLAN 20: Surgery\nVLAN 60: Voice" as SWA2 #AliceBlue
+  node "SW-A3 (Access)\nVLAN 30: Admin\nVLAN 60: Voice" as SWA3 #AliceBlue
+  node "SW-A4 (Access)\nVLAN 40: Guest\nVLAN 60: Voice" as SWA4 #AliceBlue
+
+  artifact "SRV-CENTRAL\n(172.16.4.2)\nDNS, HTTP, DHCP" as SRV #MediumPurple
+}
+
+package "Remote Clinic Campus" {
+  node "Core Router R2 (ABR)\n(Cisco 2911)\nArea 0 <-> Area 1\nEIGRP AS 100 (AD 120)" as R2 #Gold
+  node "SW-D3 (L3 Switch)\nCisco 3560-24PS\nSVIs: VLAN 10,30,50,60,99\nOSPF Area 1" as SWD3 #LightCyan
+  node "SW-A5 (Access)\nClinical, Admin, VoIP" as SWA5 #AliceBlue
+  artifact "Local Cache Server\n(172.16.4.162)" as SRV_CACHE #MediumPurple
+}
+
+' WAN Connections
+R1 <--> R2 : Primary WAN (Serial0/0/0)\n172.16.4.192/30 (OSPF Area 0)
+R1 <--> R2 : Backup WAN (Serial0/0/1)\n172.16.4.196/30 (EIGRP AS 100, AD 120)
+R1 <--> ISP : Gig0/2 (NAT PAT)\n203.0.113.0/30
+
+' Main Hospital Connections
+R1 <--> SWD1 : Gig0/0 <-> Gi0/2 (172.16.5.0/30)
+R1 <--> SWD2 : Gig0/1 <-> Gi0/2 (172.16.5.4/30)
+SWD1 <--> SWD2 : Gi0/1 <-> Gi0/1 (802.1Q Trunk, Native 999)
+
+SWD1 <--> SWA1 : Fa0/1 <-> Fa0/24 (Trunk)
+SWD1 <--> SWA2 : Fa0/3 <-> Fa0/24 (Trunk)
+SWD1 <--> SRV : Fa0/10 (Access VLAN 50)
+
+SWD2 <--> SWA3 : Fa0/1 <-> Fa0/24 (Trunk)
+SWD2 <--> SWA4 : Fa0/3 <-> Fa0/24 (Trunk)
+
+' Remote Clinic Connections
+R2 <--> SWD3 : Gig0/0 <-> Gi0/1 (172.16.5.8/30)
+SWD3 <--> SWA5 : Fa0/1 <-> Fa0/24 (Trunk)
+SWD3 <--> SRV_CACHE : Fa0/15 (Access VLAN 50)
+
+@enduml

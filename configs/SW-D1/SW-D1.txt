@@ -1,0 +1,201 @@
+! ==============================================================================
+! DEVICE:       SW-D1 (Main Hospital - Distribution Switch 1)
+! MODEL:        Cisco Catalyst 3560-24PS (Multilayer Layer-3 Switch)
+! LAYER:        Distribution Layer (Main Hospital Campus)
+! UPLINKS:      GigabitEthernet0/2 -> R1 GigabitEthernet0/0 (Routed Link /30)
+! INTER-DISTRO: GigabitEthernet0/1 -> SW-D2 GigabitEthernet0/1 (802.1Q Trunk)
+! DOWNLINKS:    Fa0/1 -> SW-A1 (ICU), Fa0/3 -> SW-A2 (Surgery), Fa0/10 -> PT Server
+! ==============================================================================
+
+enable
+configure terminal
+
+hostname SW-D1
+
+! --- Disable DNS Lookup & Set Banner ---
+no ip domain-lookup
+banner motd ^C
+====================================================================
+  SW-D1: Main Hospital Distribution Switch 1 - VIT SCOPE CN Project
+  Multilayer Layer-3 Core/Distribution Aggregator
+====================================================================
+^C
+
+! --- Management Credentials & Line Security ---
+enable secret class
+line con 0
+ password cisco
+ login
+ logging synchronous
+ exec-timeout 15 0
+line vty 0 4
+ password cisco
+ login
+ transport input ssh telnet
+ exec-timeout 15 0
+exit
+
+! --- Enable Hardware Layer-3 IP Routing ---
+ip routing
+
+! --- VLAN Database Definition ---
+vlan 10
+ name ICU_Clinical
+vlan 20
+ name Surgery_Theatre
+vlan 30
+ name Administration
+vlan 40
+ name Guest_WiFi
+vlan 50
+ name Server_Farm
+vlan 60
+ name VoIP_Voice
+vlan 99
+ name Management
+vlan 999
+ name Parking_Native
+exit
+
+! --- Spanning Tree Priority (Primary Root for Clinical & Server Farm) ---
+spanning-tree mode pvst
+spanning-tree vlan 10,20,50,99 root primary
+spanning-tree vlan 30,40,60 root secondary
+
+! --- Switched Virtual Interfaces (SVIs) - Default Gateways for Local VLANs ---
+! VLAN 10 (ICU): Subnet 172.16.3.128/26 (Mask 255.255.255.192)
+interface Vlan10
+ description SVI_Gateway_for_ICU_Clinical
+ ip address 172.16.3.129 255.255.255.192
+ ip helper-address 172.16.4.2
+ no shutdown
+exit
+
+! VLAN 20 (Surgery): Subnet 172.16.3.192/26 (Mask 255.255.255.192)
+interface Vlan20
+ description SVI_Gateway_for_Surgery_Theatre
+ ip address 172.16.3.193 255.255.255.192
+ ip helper-address 172.16.4.2
+ no shutdown
+exit
+
+! VLAN 50 (Server Farm): Subnet 172.16.4.0/27 (Mask 255.255.255.224)
+interface Vlan50
+ description SVI_Gateway_for_Server_Farm
+ ip address 172.16.4.1 255.255.255.224
+ no shutdown
+exit
+
+! VLAN 99 (Management): Subnet 172.16.4.32/27 (Mask 255.255.255.224)
+interface Vlan99
+ description SVI_Gateway_for_Management
+ ip address 172.16.4.33 255.255.255.224
+ no shutdown
+exit
+
+! --- Inter-Distribution Trunk to SW-D2 ---
+interface GigabitEthernet0/1
+ description Inter_Distribution_Trunk_to_SW-D2_Gi0/1
+ switchport trunk encapsulation dot1q
+ switchport mode trunk
+ switchport trunk native vlan 999
+ switchport trunk allowed vlan 10,20,30,40,50,60,99
+ no shutdown
+exit
+
+! --- Downlink Trunks to Access Layer Switches ---
+interface FastEthernet0/1
+ description Trunk_Downlink_to_SW-A1_Fa0/24
+ switchport trunk encapsulation dot1q
+ switchport mode trunk
+ switchport trunk native vlan 999
+ switchport trunk allowed vlan 10,20,30,40,50,60,99
+ no shutdown
+exit
+
+interface FastEthernet0/3
+ description Trunk_Downlink_to_SW-A2_Fa0/24
+ switchport trunk encapsulation dot1q
+ switchport mode trunk
+ switchport trunk native vlan 999
+ switchport trunk allowed vlan 10,20,30,40,50,60,99
+ no shutdown
+exit
+
+! --- Dedicated Server Farm Port (PT Central Server: 172.16.4.2) ---
+interface FastEthernet0/10
+ description Server_Farm_Central_Hospital_Server
+ switchport mode access
+ switchport access vlan 50
+ spanning-tree portfast
+ no shutdown
+exit
+
+! --- Routed Uplink to Core Router R1 (Point-to-Point /30 Subnet) ---
+interface GigabitEthernet0/2
+ description Routed_Uplink_to_R1_Gig0/0
+ no switchport
+ ip address 172.16.5.1 255.255.255.252
+ no shutdown
+exit
+
+! --- Dynamic Routing: OSPF Process 1 (Backbone Area 0) ---
+router ospf 1
+ router-id 172.16.5.1
+ passive-interface default
+ no passive-interface GigabitEthernet0/2
+ no passive-interface GigabitEthernet0/1
+ ! Advertise clinical and server subnets into Area 0
+ network 172.16.3.128 0.0.0.63 area 0
+ network 172.16.3.192 0.0.0.63 area 0
+ network 172.16.4.0 0.0.0.31 area 0
+ network 172.16.4.32 0.0.0.31 area 0
+ ! Transit link to R1
+ network 172.16.5.0 0.0.0.3 area 0
+exit
+
+! Default route upstream to Core Router R1
+ip route 0.0.0.0 0.0.0.0 172.16.5.2
+
+end
+write memory
+
+! ==============================================================================
+! VERIFICATION COMMANDS & EXPECTED OUTPUT
+! ==============================================================================
+!
+! 1. Verify Layer-3 Routing Table:
+!    SW-D1# show ip route
+!    EXPECTED OUTPUT:
+!    Gateway of last resort is 172.16.5.2 to network 0.0.0.0
+!    C    172.16.3.128/26 is directly connected, Vlan10
+!    C    172.16.3.192/26 is directly connected, Vlan20
+!    C    172.16.4.0/27 is directly connected, Vlan50
+!    C    172.16.4.32/27 is directly connected, Vlan99
+!    C    172.16.5.0/30 is directly connected, GigabitEthernet0/2
+!    O    172.16.0.0/23 [110/...] via 172.16.5.2 / SW-D2 (learned via OSPF)
+!    S*   0.0.0.0/0 [1/0] via 172.16.5.2
+!
+! 2. Verify SVIs Status:
+!    SW-D1# show ip interface brief
+!    EXPECTED OUTPUT:
+!    Vlan10                 172.16.3.129    YES manual up                    up      
+!    Vlan20                 172.16.3.193    YES manual up                    up      
+!    Vlan50                 172.16.4.1      YES manual up                    up      
+!    Vlan99                 172.16.4.33     YES manual up                    up      
+!    GigabitEthernet0/2     172.16.5.1      YES manual up                    up      
+!
+! 3. Verify OSPF Neighbor with R1:
+!    SW-D1# show ip ospf neighbor
+!    EXPECTED OUTPUT:
+!    Neighbor ID     Pri   State           Dead Time   Address         Interface
+!    172.16.4.200      1   FULL/BDR        00:00:35    172.16.5.2      GigabitEthernet0/2
+!
+! 4. Verify Spanning Tree Root:
+!    SW-D1# show spanning-tree root
+!    EXPECTED OUTPUT:
+!    Vlan10   SW-D1 is root
+!    Vlan20   SW-D1 is root
+!    Vlan50   SW-D1 is root
+!    Vlan99   SW-D1 is root
+! ==============================================================================

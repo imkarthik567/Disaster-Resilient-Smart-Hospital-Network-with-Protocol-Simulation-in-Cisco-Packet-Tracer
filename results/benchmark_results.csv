@@ -1,0 +1,8 @@
+loss_rate_pct,lost_frames_count,total_frames,window_size,gbn_total_transmissions,gbn_retransmissions,gbn_efficiency_pct,sr_total_transmissions,sr_retransmissions,sr_efficiency_pct,efficiency_gain_pct
+0.0,0,50,4,55,5,90.91,52,2,96.15,5.24
+5.0,2,50,4,55,5,90.91,52,2,96.15,5.24
+10.0,5,50,4,63,13,79.37,55,5,90.91,11.54
+15.0,8,50,4,71,21,70.42,58,8,86.21,15.78
+20.0,10,50,4,75,25,66.67,60,10,83.33,16.67
+25.0,12,50,4,79,29,63.29,62,12,80.65,17.35
+30.0,15,50,4,90,40,55.56,65,15,76.92,21.37

@@ -1,0 +1,161 @@
+! ==============================================================================
+! DEVICE:       SW-A5 (Remote Clinic - General Access Switch)
+! MODEL:        Cisco Catalyst 2960-24TT
+! LAYER:        Access Layer (Remote Clinic Campus)
+! UPLINK:       FastEthernet0/24 -> SW-D3 FastEthernet0/1 (802.1Q Trunk)
+! MANAGEMENT:   VLAN 99 | IP: 172.16.4.178/28 | Gateway: 172.16.4.177
+! ==============================================================================
+
+enable
+configure terminal
+
+hostname SW-A5
+
+! --- Disable DNS Lookup & Set Banner ---
+no ip domain-lookup
+banner motd ^C
+====================================================================
+  SW-A5: Remote Clinic Access Switch - VIT SCOPE CN Project
+  Unauthorized access is strictly prohibited!
+====================================================================
+^C
+
+! --- Management Credentials & Line Security ---
+enable secret class
+line con 0
+ password cisco
+ login
+ logging synchronous
+ exec-timeout 15 0
+line vty 0 4
+ password cisco
+ login
+ transport input ssh telnet
+ exec-timeout 15 0
+exit
+
+! --- VLAN Database Definition ---
+vlan 10
+ name Remote_Clinical
+vlan 30
+ name Remote_Admin
+vlan 50
+ name Remote_Server_Cache
+vlan 60
+ name Remote_VoIP
+vlan 99
+ name Management
+vlan 999
+ name Parking_Native
+exit
+
+! --- Trunk Uplink Configuration to SW-D3 ---
+interface FastEthernet0/24
+ description Trunk_Uplink_to_SW-D3_Fa0/1
+ switchport mode trunk
+ switchport trunk native vlan 999
+ switchport trunk allowed vlan 10,30,50,60,99
+ no shutdown
+exit
+
+! --- Host Access Ports: Remote Clinical Monitoring & Telemetry (VLAN 10) ---
+interface range FastEthernet0/1 - 8
+ description Clinic_Patient_Monitors_and_Telemetry
+ switchport mode access
+ switchport access vlan 10
+ spanning-tree portfast
+ spanning-tree bpduguard enable
+ switchport port-security
+ switchport port-security maximum 2
+ switchport port-security violation restrict
+ switchport port-security mac-address sticky
+ no shutdown
+exit
+
+! --- Host Access Ports: Remote Clinic Admin Workstations (VLAN 30) ---
+interface range FastEthernet0/9 - 14
+ description Clinic_Admin_Staff_PCs
+ switchport mode access
+ switchport access vlan 30
+ spanning-tree portfast
+ spanning-tree bpduguard enable
+ switchport port-security
+ switchport port-security maximum 2
+ switchport port-security violation restrict
+ switchport port-security mac-address sticky
+ no shutdown
+exit
+
+! --- Host Access Ports: Remote Local Cache Server (VLAN 50) ---
+interface range FastEthernet0/15 - 18
+ description Clinic_Local_Cache_Servers
+ switchport mode access
+ switchport access vlan 50
+ spanning-tree portfast
+ spanning-tree bpduguard enable
+ no shutdown
+exit
+
+! --- Voice Ports: Clinic VoIP Phones (VLAN 30 Data, VLAN 60 Voice) ---
+interface range FastEthernet0/19 - 22
+ description Clinic_VoIP_Phones
+ switchport mode access
+ switchport access vlan 30
+ switchport voice vlan 60
+ spanning-tree portfast
+ spanning-tree bpduguard enable
+ no shutdown
+exit
+
+! --- Unused Host Ports: Disabled into Parking VLAN 999 ---
+interface FastEthernet0/23, GigabitEthernet0/1 - 2
+ description Unused_Ports_Secured
+ switchport mode access
+ switchport access vlan 999
+ shutdown
+exit
+
+! --- Management SVI (VLAN 99) ---
+interface Vlan99
+ description In_Band_Management_SVI
+ ip address 172.16.4.178 255.255.255.240
+ no shutdown
+exit
+
+ip default-gateway 172.16.4.177
+
+! --- Spanning Tree Edge Tuning ---
+spanning-tree mode pvst
+spanning-tree portfast default
+spanning-tree portfast bpduguard default
+
+end
+write memory
+
+! ==============================================================================
+! VERIFICATION COMMANDS & EXPECTED OUTPUT
+! ==============================================================================
+!
+! 1. Verify VLAN Database:
+!    SW-A5# show vlan brief
+!    EXPECTED OUTPUT:
+!    10   Remote_Clinical                  active    Fa0/1..Fa0/8
+!    30   Remote_Admin                     active    Fa0/9..Fa0/14, Fa0/19..Fa0/22
+!    50   Remote_Server_Cache              active    Fa0/15..Fa0/18
+!    60   Remote_VoIP                      active    (Voice on Fa0/19..Fa0/22)
+!    99   Management                       active    
+!    999  Parking_Native                   active    Fa0/23, Gi0/1..Gi0/2
+!
+! 2. Verify Trunk Link:
+!    SW-A5# show interfaces trunk
+!    EXPECTED OUTPUT:
+!    Port        Mode             Encapsulation  Status        Native vlan
+!    Fa0/24      on               802.1q         trunking      999
+!    Port        Vlans allowed on trunk
+!    Fa0/24      10,30,50,60,99
+!
+! 3. Verify Management Gateway Reachability:
+!    SW-A5# ping 172.16.4.177
+!    EXPECTED OUTPUT:
+!    Success rate is 100 percent (5/5)
+! ==============================================================================

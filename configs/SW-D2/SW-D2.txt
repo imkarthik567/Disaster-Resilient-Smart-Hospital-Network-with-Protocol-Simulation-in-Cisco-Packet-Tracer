@@ -1,0 +1,199 @@
+! ==============================================================================
+! DEVICE:       SW-D2 (Main Hospital - Distribution Switch 2)
+! MODEL:        Cisco Catalyst 3560-24PS (Multilayer Layer-3 Switch)
+! LAYER:        Distribution Layer (Main Hospital Campus)
+! UPLINKS:      GigabitEthernet0/2 -> R1 GigabitEthernet0/1 (Routed Link /30)
+! INTER-DISTRO: GigabitEthernet0/1 -> SW-D1 GigabitEthernet0/1 (802.1Q Trunk)
+! DOWNLINKS:    Fa0/1 -> SW-A3 (Admin), Fa0/3 -> SW-A4 (Guest/VoIP)
+! SECURITY:     Inbound Extended ACL on SVI VLAN 40 blocking ICU, Surgery, Servers
+! ==============================================================================
+
+enable
+configure terminal
+
+hostname SW-D2
+
+! --- Disable DNS Lookup & Set Banner ---
+no ip domain-lookup
+banner motd ^C
+====================================================================
+  SW-D2: Main Hospital Distribution Switch 2 - VIT SCOPE CN Project
+  Multilayer Layer-3 Aggregator with Guest Isolation Security Policy
+====================================================================
+^C
+
+! --- Management Credentials & Line Security ---
+enable secret class
+line con 0
+ password cisco
+ login
+ logging synchronous
+ exec-timeout 15 0
+line vty 0 4
+ password cisco
+ login
+ transport input ssh telnet
+ exec-timeout 15 0
+exit
+
+! --- Enable Hardware Layer-3 IP Routing ---
+ip routing
+
+! --- VLAN Database Definition ---
+vlan 10
+ name ICU_Clinical
+vlan 20
+ name Surgery_Theatre
+vlan 30
+ name Administration
+vlan 40
+ name Guest_WiFi
+vlan 50
+ name Server_Farm
+vlan 60
+ name VoIP_Voice
+vlan 99
+ name Management
+vlan 999
+ name Parking_Native
+exit
+
+! --- Spanning Tree Priority (Primary Root for Admin, Guest, Voice) ---
+spanning-tree mode pvst
+spanning-tree vlan 30,40,60 root primary
+spanning-tree vlan 10,20,50,99 root secondary
+
+! --- Extended Access Control List: Guest VLAN Isolation Policy ---
+! Permits DNS to Central Server (172.16.4.2) so guests can browse web
+! Permits DHCP (UDP 67/68)
+! Explicitly denies all traffic to ICU (VLAN 10), Surgery (VLAN 20), Server Farm (VLAN 50)
+! Permits all outbound Internet traffic
+ip access-list extended BLOCK-GUEST
+ remark === Allow essential network services for Guests ===
+ permit udp 172.16.0.0 0.0.1.255 host 172.16.4.2 eq domain
+ permit udp 172.16.0.0 0.0.1.255 host 172.16.4.2 eq bootps
+ permit udp any eq bootpc any eq bootps
+ remark === Enforce strict isolation from medical & server zones ===
+ deny   ip 172.16.0.0 0.0.1.255 172.16.3.128 0.0.0.63   log   ! Deny Guest -> ICU
+ deny   ip 172.16.0.0 0.0.1.255 172.16.3.192 0.0.0.63   log   ! Deny Guest -> Surgery
+ deny   ip 172.16.0.0 0.0.1.255 172.16.4.0   0.0.0.31   log   ! Deny Guest -> Server Farm
+ deny   ip 172.16.0.0 0.0.1.255 172.16.4.32  0.0.0.31   log   ! Deny Guest -> Management SVI
+ remark === Allow outbound Internet and other general traffic ===
+ permit ip 172.16.0.0 0.0.1.255 any
+exit
+
+! --- Switched Virtual Interfaces (SVIs) ---
+! VLAN 40 (Guest Wi-Fi): Subnet 172.16.0.0/23 (Mask 255.255.254.0)
+interface Vlan40
+ description SVI_Gateway_for_Guest_WiFi
+ ip address 172.16.0.1 255.255.254.0
+ ip helper-address 172.16.4.2
+ ip access-group BLOCK-GUEST in
+ no shutdown
+exit
+
+! VLAN 30 (Administration): Subnet 172.16.2.0/24 (Mask 255.255.255.0)
+interface Vlan30
+ description SVI_Gateway_for_Administration
+ ip address 172.16.2.1 255.255.255.0
+ ip helper-address 172.16.4.2
+ no shutdown
+exit
+
+! VLAN 60 (VoIP Voice): Subnet 172.16.3.0/25 (Mask 255.255.255.128)
+interface Vlan60
+ description SVI_Gateway_for_VoIP_Voice
+ ip address 172.16.3.1 255.255.255.128
+ ip helper-address 172.16.4.2
+ no shutdown
+exit
+
+! --- Inter-Distribution Trunk to SW-D1 ---
+interface GigabitEthernet0/1
+ description Inter_Distribution_Trunk_to_SW-D1_Gi0/1
+ switchport trunk encapsulation dot1q
+ switchport mode trunk
+ switchport trunk native vlan 999
+ switchport trunk allowed vlan 10,20,30,40,50,60,99
+ no shutdown
+exit
+
+! --- Downlink Trunks to Access Layer Switches ---
+interface FastEthernet0/1
+ description Trunk_Downlink_to_SW-A3_Fa0/24
+ switchport trunk encapsulation dot1q
+ switchport mode trunk
+ switchport trunk native vlan 999
+ switchport trunk allowed vlan 10,20,30,40,50,60,99
+ no shutdown
+exit
+
+interface FastEthernet0/3
+ description Trunk_Downlink_to_SW-A4_Fa0/24
+ switchport trunk encapsulation dot1q
+ switchport mode trunk
+ switchport trunk native vlan 999
+ switchport trunk allowed vlan 10,20,30,40,50,60,99
+ no shutdown
+exit
+
+! --- Routed Uplink to Core Router R1 (Point-to-Point /30 Subnet) ---
+interface GigabitEthernet0/2
+ description Routed_Uplink_to_R1_Gig0/1
+ no switchport
+ ip address 172.16.5.5 255.255.255.252
+ no shutdown
+exit
+
+! --- Dynamic Routing: OSPF Process 1 (Backbone Area 0) ---
+router ospf 1
+ router-id 172.16.5.5
+ passive-interface default
+ no passive-interface GigabitEthernet0/2
+ no passive-interface GigabitEthernet0/1
+ ! Advertise admin, guest, and voice subnets into Area 0
+ network 172.16.0.0 0.0.1.255 area 0
+ network 172.16.2.0 0.0.0.255 area 0
+ network 172.16.3.0 0.0.0.127 area 0
+ ! Transit link to R1
+ network 172.16.5.4 0.0.0.3 area 0
+exit
+
+! Default route upstream to Core Router R1
+ip route 0.0.0.0 0.0.0.0 172.16.5.6
+
+end
+write memory
+
+! ==============================================================================
+! VERIFICATION COMMANDS & EXPECTED OUTPUT
+! ==============================================================================
+!
+! 1. Verify Layer-3 Routing Table:
+!    SW-D2# show ip route
+!    EXPECTED OUTPUT:
+!    Gateway of last resort is 172.16.5.6 to network 0.0.0.0
+!    C    172.16.0.0/23 is directly connected, Vlan40
+!    C    172.16.2.0/24 is directly connected, Vlan30
+!    C    172.16.3.0/25 is directly connected, Vlan60
+!    C    172.16.5.4/30 is directly connected, GigabitEthernet0/2
+!    O    172.16.3.128/26 [110/...] via 172.16.5.6 / SW-D1 (ICU subnet)
+!    S*   0.0.0.0/0 [1/0] via 172.16.5.6
+!
+! 2. Verify ACL Drop Counters & Hit Matches:
+!    SW-D2# show access-lists BLOCK-GUEST
+!    EXPECTED OUTPUT:
+!    Extended IP access list BLOCK-GUEST
+!        10 permit udp 172.16.0.0 0.0.1.255 host 172.16.4.2 eq domain (hits > 0)
+!        20 permit udp 172.16.0.0 0.0.1.255 host 172.16.4.2 eq bootps
+!        30 deny ip 172.16.0.0 0.0.1.255 172.16.3.128 0.0.0.63 (matches upon ping test)
+!        40 deny ip 172.16.0.0 0.0.1.255 172.16.3.192 0.0.0.63
+!        50 deny ip 172.16.0.0 0.0.1.255 172.16.4.0 0.0.0.31
+!        60 permit ip 172.16.0.0 0.0.1.255 any (outbound hits)
+!
+! 3. Verify OSPF Neighbor Adjacency:
+!    SW-D2# show ip ospf neighbor
+!    EXPECTED OUTPUT:
+!    Neighbor ID     Pri   State           Dead Time   Address         Interface
+!    172.16.4.200      1   FULL/BDR        00:00:36    172.16.5.6      GigabitEthernet0/2
+! ==============================================================================

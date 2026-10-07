@@ -1,0 +1,202 @@
+==============================================================================================================
+VLSM ADDRESSING PLAN
+Disaster-Resilient Smart Hospital Network
+Base Block: 172.16.0.0/16  |  Total Addresses: 65,536
+==============================================================================================================
+
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  SITE: Main Hospital
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+  Main-VLAN40-Guest  (Guest Wi-Fi — untrusted visitor devices)
+    VLAN:            VLAN 40
+    Network:         172.16.0.0/23
+    Subnet Mask:     255.255.254.0
+    Wildcard Mask:   0.0.1.255
+    Broadcast:       172.16.1.255
+    Default Gateway: 172.16.0.1
+    Usable Range:    172.16.0.1  –  172.16.1.254
+    Usable Hosts:    510  (required ≥ 500)
+
+  Main-VLAN30-Admin  (Administration — staff workstations)
+    VLAN:            VLAN 30
+    Network:         172.16.2.0/24
+    Subnet Mask:     255.255.255.0
+    Wildcard Mask:   0.0.0.255
+    Broadcast:       172.16.2.255
+    Default Gateway: 172.16.2.1
+    Usable Range:    172.16.2.1  –  172.16.2.254
+    Usable Hosts:    254  (required ≥ 200)
+
+  Main-VLAN60-Voice  (Voice — IP phones / VoIP)
+    VLAN:            VLAN 60
+    Network:         172.16.3.0/25
+    Subnet Mask:     255.255.255.128
+    Wildcard Mask:   0.0.0.127
+    Broadcast:       172.16.3.127
+    Default Gateway: 172.16.3.1
+    Usable Range:    172.16.3.1  –  172.16.3.126
+    Usable Hosts:    126  (required ≥ 100)
+
+  Main-VLAN10-ICU  (ICU — bedside monitors, telemetry SBCs)
+    VLAN:            VLAN 10
+    Network:         172.16.3.128/26
+    Subnet Mask:     255.255.255.192
+    Wildcard Mask:   0.0.0.63
+    Broadcast:       172.16.3.191
+    Default Gateway: 172.16.3.129
+    Usable Range:    172.16.3.129  –  172.16.3.190
+    Usable Hosts:    62  (required ≥ 50)
+
+  Main-VLAN20-Surgery  (Surgery — theatre devices)
+    VLAN:            VLAN 20
+    Network:         172.16.3.192/26
+    Subnet Mask:     255.255.255.192
+    Wildcard Mask:   0.0.0.63
+    Broadcast:       172.16.3.255
+    Default Gateway: 172.16.3.193
+    Usable Range:    172.16.3.193  –  172.16.3.254
+    Usable Hosts:    62  (required ≥ 40)
+
+  Main-VLAN50-Servers  (Server Farm — DNS, HTTP, DHCP, PACS)
+    VLAN:            VLAN 50
+    Network:         172.16.4.0/27
+    Subnet Mask:     255.255.255.224
+    Wildcard Mask:   0.0.0.31
+    Broadcast:       172.16.4.31
+    Default Gateway: 172.16.4.1
+    Usable Range:    172.16.4.1  –  172.16.4.30
+    Usable Hosts:    30  (required ≥ 20)
+
+  Main-VLAN99-Mgmt  (Management — switch/AP out-of-band)
+    VLAN:            VLAN 99
+    Network:         172.16.4.32/27
+    Subnet Mask:     255.255.255.224
+    Wildcard Mask:   0.0.0.31
+    Broadcast:       172.16.4.63
+    Default Gateway: 172.16.4.33
+    Usable Range:    172.16.4.33  –  172.16.4.62
+    Usable Hosts:    30  (required ≥ 20)
+
+  R1-Loopback0  (R1 OSPF Router-ID)
+    VLAN:            —
+    Network:         172.16.4.200/32
+    Subnet Mask:     255.255.255.255
+    Wildcard Mask:   0.0.0.0
+    Broadcast:       N/A (host route)
+    Default Gateway: 172.16.4.200
+    Usable Range:    172.16.4.200  –  172.16.4.200
+    Usable Hosts:    1  (required ≥ 1)
+
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  SITE: Remote Clinic
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+  Remote-VLAN10-Clinical  (Clinical — patient monitoring)
+    VLAN:            VLAN 10
+    Network:         172.16.4.64/27
+    Subnet Mask:     255.255.255.224
+    Wildcard Mask:   0.0.0.31
+    Broadcast:       172.16.4.95
+    Default Gateway: 172.16.4.65
+    Usable Range:    172.16.4.65  –  172.16.4.94
+    Usable Hosts:    30  (required ≥ 20)
+
+  Remote-VLAN30-Admin  (Administration — clinic staff PCs)
+    VLAN:            VLAN 30
+    Network:         172.16.4.96/27
+    Subnet Mask:     255.255.255.224
+    Wildcard Mask:   0.0.0.31
+    Broadcast:       172.16.4.127
+    Default Gateway: 172.16.4.97
+    Usable Range:    172.16.4.97  –  172.16.4.126
+    Usable Hosts:    30  (required ≥ 20)
+
+  Remote-VLAN60-Voice  (Voice — IP phones)
+    VLAN:            VLAN 60
+    Network:         172.16.4.128/27
+    Subnet Mask:     255.255.255.224
+    Wildcard Mask:   0.0.0.31
+    Broadcast:       172.16.4.159
+    Default Gateway: 172.16.4.129
+    Usable Range:    172.16.4.129  –  172.16.4.158
+    Usable Hosts:    30  (required ≥ 15)
+
+  Remote-VLAN50-Servers  (Local server cache)
+    VLAN:            VLAN 50
+    Network:         172.16.4.160/28
+    Subnet Mask:     255.255.255.240
+    Wildcard Mask:   0.0.0.15
+    Broadcast:       172.16.4.175
+    Default Gateway: 172.16.4.161
+    Usable Range:    172.16.4.161  –  172.16.4.174
+    Usable Hosts:    14  (required ≥ 10)
+
+  Remote-VLAN99-Mgmt  (Management — switch/AP OOB)
+    VLAN:            VLAN 99
+    Network:         172.16.4.176/28
+    Subnet Mask:     255.255.255.240
+    Wildcard Mask:   0.0.0.15
+    Broadcast:       172.16.4.191
+    Default Gateway: 172.16.4.177
+    Usable Range:    172.16.4.177  –  172.16.4.190
+    Usable Hosts:    14  (required ≥ 10)
+
+  R2-Loopback0  (R2 OSPF Router-ID)
+    VLAN:            —
+    Network:         172.16.4.201/32
+    Subnet Mask:     255.255.255.255
+    Wildcard Mask:   0.0.0.0
+    Broadcast:       N/A (host route)
+    Default Gateway: 172.16.4.201
+    Usable Range:    172.16.4.201  –  172.16.4.201
+    Usable Hosts:    1  (required ≥ 1)
+
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  SITE: WAN
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+  WAN-Primary-Serial  (Primary WAN — R1 ↔ R2 Serial (OSPF))
+    VLAN:            —
+    Network:         172.16.4.192/30
+    Subnet Mask:     255.255.255.252
+    Wildcard Mask:   0.0.0.3
+    Broadcast:       172.16.4.195
+    Default Gateway: 172.16.4.193
+    Usable Range:    172.16.4.193  –  172.16.4.194
+    Usable Hosts:    2  (required ≥ 2)
+
+  WAN-Secondary  (Secondary WAN — R1 ↔ R2 Backup (EIGRP))
+    VLAN:            —
+    Network:         172.16.4.196/30
+    Subnet Mask:     255.255.255.252
+    Wildcard Mask:   0.0.0.3
+    Broadcast:       172.16.4.199
+    Default Gateway: 172.16.4.197
+    Usable Range:    172.16.4.197  –  172.16.4.198
+    Usable Hosts:    2  (required ≥ 2)
+
+==============================================================================================================
+COMPACT SUMMARY TABLE
+==============================================================================================================
+Name                          VLAN CIDR                 Mask             Wildcard         Gateway          Usable
+-----------------------------------------------------------------------------------------------------------------
+Main-VLAN40-Guest               40 172.16.0.0/23        255.255.254.0    0.0.1.255        172.16.0.1          510
+Main-VLAN30-Admin               30 172.16.2.0/24        255.255.255.0    0.0.0.255        172.16.2.1          254
+Main-VLAN60-Voice               60 172.16.3.0/25        255.255.255.128  0.0.0.127        172.16.3.1          126
+Main-VLAN10-ICU                 10 172.16.3.128/26      255.255.255.192  0.0.0.63         172.16.3.129         62
+Main-VLAN20-Surgery             20 172.16.3.192/26      255.255.255.192  0.0.0.63         172.16.3.193         62
+Main-VLAN50-Servers             50 172.16.4.0/27        255.255.255.224  0.0.0.31         172.16.4.1           30
+Main-VLAN99-Mgmt                99 172.16.4.32/27       255.255.255.224  0.0.0.31         172.16.4.33          30
+Remote-VLAN10-Clinical          10 172.16.4.64/27       255.255.255.224  0.0.0.31         172.16.4.65          30
+Remote-VLAN30-Admin             30 172.16.4.96/27       255.255.255.224  0.0.0.31         172.16.4.97          30
+Remote-VLAN60-Voice             60 172.16.4.128/27      255.255.255.224  0.0.0.31         172.16.4.129         30
+Remote-VLAN50-Servers           50 172.16.4.160/28      255.255.255.240  0.0.0.15         172.16.4.161         14
+Remote-VLAN99-Mgmt              99 172.16.4.176/28      255.255.255.240  0.0.0.15         172.16.4.177         14
+WAN-Primary-Serial               — 172.16.4.192/30      255.255.255.252  0.0.0.3          172.16.4.193          2
+WAN-Secondary                    — 172.16.4.196/30      255.255.255.252  0.0.0.3          172.16.4.197          2
+R1-Loopback0                     — 172.16.4.200/32      255.255.255.255  0.0.0.0          172.16.4.200          1
+R2-Loopback0                     — 172.16.4.201/32      255.255.255.255  0.0.0.0          172.16.4.201          1
+
+Allocated: 1,226 / 65,536 addresses (1.87%)
+Remaining: 64,310 addresses

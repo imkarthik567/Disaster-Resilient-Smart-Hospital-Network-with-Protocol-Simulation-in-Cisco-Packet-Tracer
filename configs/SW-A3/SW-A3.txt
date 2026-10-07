@@ -1,0 +1,138 @@
+! ==============================================================================
+! DEVICE:       SW-A3 (Main Hospital - Administration Floor Access Switch)
+! MODEL:        Cisco Catalyst 2960-24TT
+! LAYER:        Access Layer (Main Hospital Campus)
+! UPLINK:       FastEthernet0/24 -> SW-D2 FastEthernet0/1 (802.1Q Trunk)
+! MANAGEMENT:   VLAN 99 | IP: 172.16.4.36/27 | Gateway: 172.16.4.33
+! ==============================================================================
+
+enable
+configure terminal
+
+hostname SW-A3
+
+! --- Disable DNS Lookup & Set Banner ---
+no ip domain-lookup
+banner motd ^C
+====================================================================
+  SW-A3: Main Hospital Admin Access Switch - VIT SCOPE CN Project
+  Unauthorized access is strictly prohibited!
+====================================================================
+^C
+
+! --- Management Credentials & Line Security ---
+enable secret class
+line con 0
+ password cisco
+ login
+ logging synchronous
+ exec-timeout 15 0
+line vty 0 4
+ password cisco
+ login
+ transport input ssh telnet
+ exec-timeout 15 0
+exit
+
+! --- VLAN Database Definition ---
+vlan 10
+ name ICU_Clinical
+vlan 20
+ name Surgery_Theatre
+vlan 30
+ name Administration
+vlan 40
+ name Guest_WiFi
+vlan 50
+ name Server_Farm
+vlan 60
+ name VoIP_Voice
+vlan 99
+ name Management
+vlan 999
+ name Parking_Native
+exit
+
+! --- Trunk Uplink Configuration to SW-D2 ---
+interface FastEthernet0/24
+ description Trunk_Uplink_to_SW-D2_Fa0/1
+ switchport mode trunk
+ switchport trunk native vlan 999
+ switchport trunk allowed vlan 10,20,30,40,50,60,99
+ no shutdown
+exit
+
+! --- Host Access Ports: Hospital Admin Workstations (VLAN 30) ---
+interface range FastEthernet0/1 - 16
+ description Hospital_Admin_Staff_PCs
+ switchport mode access
+ switchport access vlan 30
+ spanning-tree portfast
+ spanning-tree bpduguard enable
+ switchport port-security
+ switchport port-security maximum 2
+ switchport port-security violation restrict
+ switchport port-security mac-address sticky
+ no shutdown
+exit
+
+! --- Voice Ports: Administrative IP Phones (VLAN 30 Data, VLAN 60 Voice) ---
+interface range FastEthernet0/17 - 20
+ description Admin_Staff_IP_Phones
+ switchport mode access
+ switchport access vlan 30
+ switchport voice vlan 60
+ spanning-tree portfast
+ spanning-tree bpduguard enable
+ no shutdown
+exit
+
+! --- Unused Host Ports: Disabled into Parking VLAN 999 ---
+interface range FastEthernet0/21 - 23, GigabitEthernet0/1 - 2
+ description Unused_Ports_Secured
+ switchport mode access
+ switchport access vlan 999
+ shutdown
+exit
+
+! --- Management SVI (VLAN 99) ---
+interface Vlan99
+ description In_Band_Management_SVI
+ ip address 172.16.4.36 255.255.255.224
+ no shutdown
+exit
+
+ip default-gateway 172.16.4.33
+
+! --- Spanning Tree Edge Tuning ---
+spanning-tree mode pvst
+spanning-tree portfast default
+spanning-tree portfast bpduguard default
+
+end
+write memory
+
+! ==============================================================================
+! VERIFICATION COMMANDS & EXPECTED OUTPUT
+! ==============================================================================
+!
+! 1. Verify VLAN Database:
+!    SW-A3# show vlan brief
+!    EXPECTED OUTPUT:
+!    30   Administration                   active    Fa0/1..Fa0/20
+!    99   Management                       active    
+!    999  Parking_Native                   active    Fa0/21..Fa0/23, Gi0/1..Gi0/2
+!
+! 2. Verify Trunk Link:
+!    SW-A3# show interfaces trunk
+!    EXPECTED OUTPUT:
+!    Port        Mode             Encapsulation  Status        Native vlan
+!    Fa0/24      on               802.1q         trunking      999
+!    Port        Vlans allowed on trunk
+!    Fa0/24      10,20,30,40,50,60,99
+!
+! 3. Verify Management Gateway Reachability:
+!    SW-A3# ping 172.16.4.33
+!    EXPECTED OUTPUT:
+!    Success rate is 100 percent (5/5)
+! ==============================================================================
