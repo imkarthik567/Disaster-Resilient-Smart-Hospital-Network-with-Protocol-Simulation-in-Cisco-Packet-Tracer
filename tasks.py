@@ -32,7 +32,10 @@ def run_command(cmd, desc):
     return True
 
 def task_addressing():
-    return run_command(["addressing/vlsm_calculator.py"], "Regenerating VLSM Addressing Plan & Tables")
+    return run_command(["addressing/vlsm.py"], "Regenerating VLSM Addressing Plan & Tables")
+
+def task_test():
+    return run_command(["tests/test_vlsm.py"], "Executing VLSM Unit Tests")
 
 def task_lint():
     return run_command(["verification/config_linter.py"], "Auditing Device Configurations via Linter")
@@ -79,6 +82,7 @@ def main():
     target = sys.argv[1].lower()
     targets = {
         "addressing": task_addressing,
+        "test": task_test,
         "lint": task_lint,
         "bench": task_bench,
         "charts": task_charts,

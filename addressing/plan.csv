@@ -1,0 +1,24 @@
+name,site,vlan_id,network,prefix,cidr,subnet_mask,wildcard_mask,first_host,last_host,broadcast,gateway,needed_hosts,usable_hosts,wasted_addresses,utilisation_pct,description
+Main-VLAN40-Guest,Main Hospital,40,172.16.0.0,22,172.16.0.0/22,255.255.252.0,0.0.3.255,172.16.0.1,172.16.3.254,172.16.3.255,172.16.0.1,520,1022,502,50.88,Main Hospital Guest Wi-Fi untrusted visitor network
+Main-VLAN30-Admin,Main Hospital,30,172.16.4.0,23,172.16.4.0/23,255.255.254.0,0.0.1.255,172.16.4.1,172.16.5.254,172.16.5.255,172.16.4.1,260,510,250,50.98,Main Hospital Administrative staff workstations
+Main-VLAN60-Voice,Main Hospital,60,172.16.6.0,25,172.16.6.0/25,255.255.255.128,0.0.0.127,172.16.6.1,172.16.6.126,172.16.6.127,172.16.6.1,78,126,48,61.9,Main Hospital IP Phones / VoIP endpoints
+Clinic-VLAN40-Guest,Remote Clinic,40,172.16.6.128,25,172.16.6.128/25,255.255.255.128,0.0.0.127,172.16.6.129,172.16.6.254,172.16.6.255,172.16.6.129,65,126,61,51.59,Remote Clinic Guest Wi-Fi visitor network
+Main-VLAN50-Servers,Main Hospital,50,172.16.7.0,26,172.16.7.0/26,255.255.255.192,0.0.0.63,172.16.7.1,172.16.7.62,172.16.7.63,172.16.7.1,39,62,23,62.9,"Main Hospital Server farm (DNS, DHCP, HTTP EHR, PACS)"
+Main-VLAN20-Surgery,Main Hospital,20,172.16.7.64,26,172.16.7.64/26,255.255.255.192,0.0.0.63,172.16.7.65,172.16.7.126,172.16.7.127,172.16.7.65,52,62,10,83.87,Main Hospital Operating theatre surgical suites
+Main-VLAN10-ICU,Main Hospital,10,172.16.7.128,26,172.16.7.128/26,255.255.255.192,0.0.0.63,172.16.7.129,172.16.7.190,172.16.7.191,172.16.7.129,52,62,10,83.87,Main Hospital ICU bedside telemetry sensors & SBC nodes
+Main-VLAN99-Mgmt,Main Hospital,99,172.16.7.192,27,172.16.7.192/27,255.255.255.224,0.0.0.31,172.16.7.193,172.16.7.222,172.16.7.223,172.16.7.193,26,30,4,86.67,Main Hospital Out-of-band network switch & device management
+Clinic-VLAN60-Voice,Remote Clinic,60,172.16.7.224,27,172.16.7.224/27,255.255.255.224,0.0.0.31,172.16.7.225,172.16.7.254,172.16.7.255,172.16.7.225,26,30,4,86.67,Remote Clinic VoIP phones
+Clinic-VLAN30-Admin,Remote Clinic,30,172.16.8.0,27,172.16.8.0/27,255.255.255.224,0.0.0.31,172.16.8.1,172.16.8.30,172.16.8.31,172.16.8.1,26,30,4,86.67,Remote Clinic administrative PCs and reception terminals
+Clinic-VLAN10-Clinical,Remote Clinic,10,172.16.8.32,27,172.16.8.32/27,255.255.255.224,0.0.0.31,172.16.8.33,172.16.8.62,172.16.8.63,172.16.8.33,26,30,4,86.67,Remote Clinic patient monitoring and clinical telemetry
+Clinic-VLAN99-Mgmt,Remote Clinic,99,172.16.8.64,28,172.16.8.64/28,255.255.255.240,0.0.0.15,172.16.8.65,172.16.8.78,172.16.8.79,172.16.8.65,13,14,1,92.86,Remote Clinic switch and AP management
+WAN-Primary-Serial,WAN,0,172.16.8.80,30,172.16.8.80/30,255.255.255.252,0.0.0.3,172.16.8.81,172.16.8.82,172.16.8.83,172.16.8.81,2,2,0,100.0,Primary WAN Serial link R1 Se0/0/0 <-> R2 Se0/0/0 (OSPF Area 0)
+WAN-Secondary-Serial,WAN,0,172.16.8.84,30,172.16.8.84/30,255.255.255.252,0.0.0.3,172.16.8.85,172.16.8.86,172.16.8.87,172.16.8.85,2,2,0,100.0,Secondary Standby WAN Serial link R1 Se0/0/1 <-> R2 Se0/0/1 (EIGRP AS 100)
+Transit-R1-SW-D1,Main Hospital,0,172.16.8.88,30,172.16.8.88/30,255.255.255.252,0.0.0.3,172.16.8.89,172.16.8.90,172.16.8.91,172.16.8.89,2,2,0,100.0,Routed transit link R1 Gig0/0 <-> SW-D1 Gig0/2
+Transit-R1-SW-D2,Main Hospital,0,172.16.8.92,30,172.16.8.92/30,255.255.255.252,0.0.0.3,172.16.8.93,172.16.8.94,172.16.8.95,172.16.8.93,2,2,0,100.0,Routed transit link R1 Gig0/1 <-> SW-D2 Gig0/2
+Transit-R2-SW-D3,Remote Clinic,0,172.16.8.96,30,172.16.8.96/30,255.255.255.252,0.0.0.3,172.16.8.97,172.16.8.98,172.16.8.99,172.16.8.97,2,2,0,100.0,Routed transit link R2 Gig0/0 <-> SW-D3 Gig0/1 (OSPF Area 1)
+Edge-R1-ISP,Internet Edge,0,172.16.8.100,30,172.16.8.100/30,255.255.255.252,0.0.0.3,172.16.8.101,172.16.8.102,172.16.8.103,172.16.8.101,2,2,0,100.0,Internet edge transit link R1 Gig0/2 <-> EDGE-ISP Gig0/0
+Loopback-R1,Main Hospital,0,172.16.8.104,32,172.16.8.104/32,255.255.255.255,0.0.0.0,172.16.8.104,172.16.8.104,N/A (Host Route),172.16.8.104,1,1,0,100.0,Router R1 Loopback0 (OSPF Router-ID)
+Loopback-R2,Remote Clinic,0,172.16.8.105,32,172.16.8.105/32,255.255.255.255,0.0.0.0,172.16.8.105,172.16.8.105,N/A (Host Route),172.16.8.105,1,1,0,100.0,Router R2 Loopback0 (OSPF Router-ID)
+Loopback-SW-D1,Main Hospital,0,172.16.8.106,32,172.16.8.106/32,255.255.255.255,0.0.0.0,172.16.8.106,172.16.8.106,N/A (Host Route),172.16.8.106,1,1,0,100.0,Multilayer Switch SW-D1 Loopback0 (OSPF Router-ID)
+Loopback-SW-D2,Main Hospital,0,172.16.8.107,32,172.16.8.107/32,255.255.255.255,0.0.0.0,172.16.8.107,172.16.8.107,N/A (Host Route),172.16.8.107,1,1,0,100.0,Multilayer Switch SW-D2 Loopback0 (OSPF Router-ID)
+Loopback-SW-D3,Remote Clinic,0,172.16.8.108,32,172.16.8.108/32,255.255.255.255,0.0.0.0,172.16.8.108,172.16.8.108,N/A (Host Route),172.16.8.108,1,1,0,100.0,Multilayer Switch SW-D3 Loopback0 (OSPF Router-ID)

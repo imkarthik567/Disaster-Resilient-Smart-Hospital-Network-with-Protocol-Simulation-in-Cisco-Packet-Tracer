@@ -1,0 +1,190 @@
+{
+  "base_network": "172.16.0.0/16",
+  "growth_headroom_percent": 30,
+  "requirements": [
+    {
+      "name": "Main-VLAN40-Guest",
+      "site": "Main Hospital",
+      "vlan_id": 40,
+      "base_hosts": 400,
+      "type": "host_pool",
+      "description": "Main Hospital Guest Wi-Fi untrusted visitor network"
+    },
+    {
+      "name": "Main-VLAN30-Admin",
+      "site": "Main Hospital",
+      "vlan_id": 30,
+      "base_hosts": 200,
+      "type": "host_pool",
+      "description": "Main Hospital Administrative staff workstations"
+    },
+    {
+      "name": "Main-VLAN60-Voice",
+      "site": "Main Hospital",
+      "vlan_id": 60,
+      "base_hosts": 60,
+      "type": "host_pool",
+      "description": "Main Hospital IP Phones / VoIP endpoints"
+    },
+    {
+      "name": "Main-VLAN10-ICU",
+      "site": "Main Hospital",
+      "vlan_id": 10,
+      "base_hosts": 40,
+      "type": "host_pool",
+      "description": "Main Hospital ICU bedside telemetry sensors & SBC nodes"
+    },
+    {
+      "name": "Main-VLAN20-Surgery",
+      "site": "Main Hospital",
+      "vlan_id": 20,
+      "base_hosts": 40,
+      "type": "host_pool",
+      "description": "Main Hospital Operating theatre surgical suites"
+    },
+    {
+      "name": "Main-VLAN50-Servers",
+      "site": "Main Hospital",
+      "vlan_id": 50,
+      "base_hosts": 30,
+      "type": "host_pool",
+      "description": "Main Hospital Server farm (DNS, DHCP, HTTP EHR, PACS)"
+    },
+    {
+      "name": "Main-VLAN99-Mgmt",
+      "site": "Main Hospital",
+      "vlan_id": 99,
+      "base_hosts": 20,
+      "type": "host_pool",
+      "description": "Main Hospital Out-of-band network switch & device management"
+    },
+    {
+      "name": "Clinic-VLAN40-Guest",
+      "site": "Remote Clinic",
+      "vlan_id": 40,
+      "base_hosts": 50,
+      "type": "host_pool",
+      "description": "Remote Clinic Guest Wi-Fi visitor network"
+    },
+    {
+      "name": "Clinic-VLAN10-Clinical",
+      "site": "Remote Clinic",
+      "vlan_id": 10,
+      "base_hosts": 20,
+      "type": "host_pool",
+      "description": "Remote Clinic patient monitoring and clinical telemetry"
+    },
+    {
+      "name": "Clinic-VLAN30-Admin",
+      "site": "Remote Clinic",
+      "vlan_id": 30,
+      "base_hosts": 20,
+      "type": "host_pool",
+      "description": "Remote Clinic administrative PCs and reception terminals"
+    },
+    {
+      "name": "Clinic-VLAN60-Voice",
+      "site": "Remote Clinic",
+      "vlan_id": 60,
+      "base_hosts": 20,
+      "type": "host_pool",
+      "description": "Remote Clinic VoIP phones"
+    },
+    {
+      "name": "Clinic-VLAN99-Mgmt",
+      "site": "Remote Clinic",
+      "vlan_id": 99,
+      "base_hosts": 10,
+      "type": "host_pool",
+      "description": "Remote Clinic switch and AP management"
+    },
+    {
+      "name": "WAN-Primary-Serial",
+      "site": "WAN",
+      "vlan_id": 0,
+      "base_hosts": 2,
+      "type": "point_to_point",
+      "description": "Primary WAN Serial link R1 Se0/0/0 <-> R2 Se0/0/0 (OSPF Area 0)"
+    },
+    {
+      "name": "WAN-Secondary-Serial",
+      "site": "WAN",
+      "vlan_id": 0,
+      "base_hosts": 2,
+      "type": "point_to_point",
+      "description": "Secondary Standby WAN Serial link R1 Se0/0/1 <-> R2 Se0/0/1 (EIGRP AS 100)"
+    },
+    {
+      "name": "Transit-R1-SW-D1",
+      "site": "Main Hospital",
+      "vlan_id": 0,
+      "base_hosts": 2,
+      "type": "point_to_point",
+      "description": "Routed transit link R1 Gig0/0 <-> SW-D1 Gig0/2"
+    },
+    {
+      "name": "Transit-R1-SW-D2",
+      "site": "Main Hospital",
+      "vlan_id": 0,
+      "base_hosts": 2,
+      "type": "point_to_point",
+      "description": "Routed transit link R1 Gig0/1 <-> SW-D2 Gig0/2"
+    },
+    {
+      "name": "Transit-R2-SW-D3",
+      "site": "Remote Clinic",
+      "vlan_id": 0,
+      "base_hosts": 2,
+      "type": "point_to_point",
+      "description": "Routed transit link R2 Gig0/0 <-> SW-D3 Gig0/1 (OSPF Area 1)"
+    },
+    {
+      "name": "Edge-R1-ISP",
+      "site": "Internet Edge",
+      "vlan_id": 0,
+      "base_hosts": 2,
+      "type": "point_to_point",
+      "description": "Internet edge transit link R1 Gig0/2 <-> EDGE-ISP Gig0/0"
+    },
+    {
+      "name": "Loopback-R1",
+      "site": "Main Hospital",
+      "vlan_id": 0,
+      "base_hosts": 1,
+      "type": "loopback",
+      "description": "Router R1 Loopback0 (OSPF Router-ID)"
+    },
+    {
+      "name": "Loopback-R2",
+      "site": "Remote Clinic",
+      "vlan_id": 0,
+      "base_hosts": 1,
+      "type": "loopback",
+      "description": "Router R2 Loopback0 (OSPF Router-ID)"
+    },
+    {
+      "name": "Loopback-SW-D1",
+      "site": "Main Hospital",
+      "vlan_id": 0,
+      "base_hosts": 1,
+      "type": "loopback",
+      "description": "Multilayer Switch SW-D1 Loopback0 (OSPF Router-ID)"
+    },
+    {
+      "name": "Loopback-SW-D2",
+      "site": "Main Hospital",
+      "vlan_id": 0,
+      "base_hosts": 1,
+      "type": "loopback",
+      "description": "Multilayer Switch SW-D2 Loopback0 (OSPF Router-ID)"
+    },
+    {
+      "name": "Loopback-SW-D3",
+      "site": "Remote Clinic",
+      "vlan_id": 0,
+      "base_hosts": 1,
+      "type": "loopback",
+      "description": "Multilayer Switch SW-D3 Loopback0 (OSPF Router-ID)"
+    }
+  ]
+}
