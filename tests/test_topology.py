@@ -107,6 +107,21 @@ def test_vlan_host_counts_and_sbc_requirements():
     clinic_adm = [r for r in rows if r["site"] == "Remote Clinic" and r["vlan"] == "30" and r["device"].startswith("PC")]
     assert len(clinic_adm) >= 3, f"Expected >= 3 Clinic Admin PCs, got {len(clinic_adm)}"
 
+def test_ptbuilder_js_validity():
+    """Verify that build_topology.js exists, contains required functions, and matches inventory."""
+    js_path = os.path.join(PROJECT_ROOT, "topology", "build_topology.js")
+    assert os.path.exists(js_path), "build_topology.js does not exist"
+    with open(js_path, "r", encoding="utf-8") as f:
+        content = f.read()
+
+    assert "var CONFIG =" in content, "Missing CONFIG object in JS"
+    assert "function buildDevices" in content, "Missing buildDevices function"
+    assert "function installModules" in content, "Missing installModules function"
+    assert "function createLinks" in content, "Missing createLinks function"
+    assert "function applyLayout" in content, "Missing applyLayout function"
+    assert "function reportSummary" in content, "Missing reportSummary function"
+    assert '"R1"' in content and '"R2"' in content and '"SW-D1"' in content, "Core devices missing from JS config"
+
 if __name__ == "__main__":
     print("Executing Topology & Cabling Verification Suite...")
     test_cabling_csv_structure()
@@ -119,4 +134,6 @@ if __name__ == "__main__":
     print("  [PASS] test_serial_dce_clock_rate")
     test_vlan_host_counts_and_sbc_requirements()
     print("  [PASS] test_vlan_host_counts_and_sbc_requirements")
-    print("\nALL 5 TOPOLOGY & CABLING TESTS PASSED SUCCESSFULLY!")
+    test_ptbuilder_js_validity()
+    print("  [PASS] test_ptbuilder_js_validity")
+    print("\nALL 6 TOPOLOGY & CABLING TESTS PASSED SUCCESSFULLY!")

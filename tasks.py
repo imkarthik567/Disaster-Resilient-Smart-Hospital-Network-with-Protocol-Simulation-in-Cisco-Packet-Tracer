@@ -51,7 +51,7 @@ def task_charts():
 def task_docs():
     ok1 = task_addressing()
     ok2 = run_command(["scripts/utils/generate_traceability.py"], "Regenerating Requirements Traceability Matrix")
-    ok3 = run_command(["topology/pt_builder.py"], "Building Topology & Interconnect Sheets")
+    ok3 = run_command(["topology/generate_ptbuilder.py"], "Regenerating PTBuilder Topology Scripts from Cabling Table")
     return ok1 and ok2 and ok3
 
 def task_all():
