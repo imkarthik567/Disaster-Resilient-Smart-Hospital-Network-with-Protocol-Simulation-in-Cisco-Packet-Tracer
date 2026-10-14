@@ -79,8 +79,9 @@ logging host 172.16.7.4
 logging trap informational
 logging buffered 4096 informational
 
-! --- Enable Hardware Layer-3 IP Routing ---
+! --- Enable Hardware Layer-3 IP Routing & Global Quality of Service ---
 ip routing
+mls qos
 
 ! --- VLAN Database Definition ---
 vlan 10
@@ -127,6 +128,7 @@ interface Port-channel 1
  switchport trunk native vlan 999
  switchport trunk allowed vlan 10,20,30,40,50,60,99
  switchport nonegotiate
+ mls qos trust dscp
  no shutdown
 exit
 
@@ -193,6 +195,7 @@ interface GigabitEthernet0/2
  no switchport
  ip address 172.16.8.93 255.255.255.252
  ip ospf network point-to-point
+ mls qos trust dscp
  no shutdown
 exit
 
@@ -376,6 +379,50 @@ ip access-list extended ACL-MGMT-IN
  deny ip any any log
 exit
 
+! --- Quality of Service (QoS): Ingress Classification ACLs (SW-D2) ---
+ip access-list extended ACL-MARK-VOICE
+ remark Class C2: Ingress VoIP Bearer Audio & Signaling
+ permit udp 172.16.6.0 0.0.0.127 any
+ permit tcp 172.16.6.0 0.0.0.127 any
+exit
+
+ip access-list extended ACL-MARK-ADMIN
+ remark Class C4: Ingress Admin EHR Queries & DNS
+ permit tcp 172.16.4.0 0.0.1.255 host 172.16.7.4 eq www
+ permit tcp 172.16.4.0 0.0.1.255 host 172.16.7.4 eq 443
+ permit udp 172.16.4.0 0.0.1.255 host 172.16.7.4 eq domain
+exit
+
+ip access-list extended ACL-MARK-GUEST
+ remark Class C5: Ingress Guest Wi-Fi Scavenger Traffic
+ permit ip 172.16.0.0 0.0.3.255 any
+exit
+
+! --- Quality of Service (QoS): MQC Ingress Class-Maps ---
+class-map match-any CM-DISTRO-VOICE
+ match access-group name ACL-MARK-VOICE
+exit
+
+class-map match-any CM-DISTRO-ADMIN
+ match access-group name ACL-MARK-ADMIN
+exit
+
+class-map match-any CM-DISTRO-GUEST
+ match access-group name ACL-MARK-GUEST
+exit
+
+! --- Quality of Service (QoS): MQC Ingress Marking Policy-Map ---
+policy-map PM-DISTRO-MARK-INGRESS
+ class CM-DISTRO-VOICE
+  set dscp cs5
+ class CM-DISTRO-ADMIN
+  set dscp af21
+ class CM-DISTRO-GUEST
+  set dscp cs1
+ class class-default
+  set dscp default
+exit
+
 ! --- Inter-VLAN Routing: Switch Virtual Interfaces (SVIs) & HSRP v2 ---
 ! Group 1 (Odd VLANs: 10, 30, 50, 99): SW-D2 is STANDBY (Priority 100, Preempt)
 ! Group 2 (Even VLANs: 20, 40, 60): SW-D2 is ACTIVE (Priority 110, Preempt, Track Gi0/2 decr 20)
@@ -414,6 +461,7 @@ interface Vlan30
  ip address 172.16.4.3 255.255.254.0
  ip access-group ACL-ADMIN-IN in
  ip helper-address 172.16.7.4
+ service-policy input PM-DISTRO-MARK-INGRESS
  standby version 2
  standby 30 ip 172.16.4.1
  standby 30 priority 100
@@ -427,6 +475,7 @@ interface Vlan40
  ip address 172.16.0.3 255.255.252.0
  ip access-group ACL-GUEST-IN in
  ip helper-address 172.16.7.4
+ service-policy input PM-DISTRO-MARK-INGRESS
  standby version 2
  standby 40 ip 172.16.0.1
  standby 40 priority 110
@@ -453,6 +502,7 @@ interface Vlan60
  ip address 172.16.6.3 255.255.255.128
  ip access-group ACL-VOICE-IN in
  ip helper-address 172.16.7.4
+ service-policy input PM-DISTRO-MARK-INGRESS
  standby version 2
  standby 60 ip 172.16.6.1
  standby 60 priority 110
@@ -707,4 +757,48 @@ write memory
 !     10 permit 172.16.7.212
 !     20 permit 172.16.8.75
 !     30 deny any log
+!
+! 12. Quality of Service (QoS) Verification & Policy Status
+! ------------------------------------------------------------------------------
+! Step 1: Verify global MLS QoS status on distribution switch:
+! SW-D2# show mls qos
+!   QoS is enabled
+!   QoS ip packet dscp rewrite is enabled
+!
+! Step 2: Confirm DSCP trust on routed uplink to R1:
+! SW-D2# show mls qos interface GigabitEthernet0/2
+!   GigabitEthernet0/2
+!   trust state: trust dscp
+!   trust mode: trust dscp
+!   COS override: dis
+!   default COS: 0
+!   pass-through: none
+!
+! Step 3: Inspect SVI Ingress Service-Policy:
+! SW-D2# show policy-map interface Vlan60
+!   Vlan60 
+!     Service-policy input: PM-DISTRO-MARK-INGRESS
+!       Class-map: CM-DISTRO-VOICE (match-any)
+!         25 packets
+!         Match: access-group name ACL-MARK-VOICE
+!         QoS Set
+!           dscp cs5
+!       Class-map: CM-DISTRO-ADMIN (match-any)
+!         0 packets
+!         Match: access-group name ACL-MARK-ADMIN
+!         QoS Set
+!           dscp af21
+!       Class-map: CM-DISTRO-GUEST (match-any)
+!         0 packets
+!         Match: access-group name ACL-MARK-GUEST
+!         QoS Set
+!           dscp cs1
+!       Class-map: class-default (match-any)
+!         0 packets
+!         QoS Set
+!           dscp default
+! [NOTE ON PACKET TRACER 8.x LIMITATION]
+! In Packet Tracer 8.x, Catalyst 3560 accepts 'mls qos' and parses 'policy-map' syntax,
+! but hardware queue scheduling and packet rate limiting are stubbed. Drop counters
+! and strict LLQ serialization operate on Core Routers R1 and R2 across WAN serial links.
 ! ==============================================================================

@@ -78,8 +78,9 @@ logging host 172.16.7.4
 logging trap informational
 logging buffered 4096 informational
 
-! --- Enable Hardware Layer-3 IP Routing ---
+! --- Enable Hardware Layer-3 IP Routing & Global Quality of Service ---
 ip routing
+mls qos
 
 ! --- VLAN Database Definition ---
 vlan 10
@@ -122,6 +123,7 @@ interface Port-channel 1
  switchport trunk native vlan 999
  switchport trunk allowed vlan 10,30,40,60,99
  switchport nonegotiate
+ mls qos trust dscp
  no shutdown
 exit
 
@@ -141,6 +143,7 @@ interface GigabitEthernet0/1
  description Routed_Point_to_Point_Uplink_to_R2_Gig0/1
  no switchport
  ip address 172.16.8.114 255.255.255.252
+ mls qos trust dscp
  no shutdown
 exit
 
@@ -149,6 +152,76 @@ interface Loopback0
  description OSPF_Router_ID_and_Management
  ip address 172.16.8.109 255.255.255.255
  no shutdown
+exit
+
+! --- Quality of Service (QoS): Ingress Classification ACLs (SW-D4) ---
+ip access-list extended ACL-MARK-CLINIC-VITALS
+ remark Class C1: Ingress Clinic Triage Telemetry to Central Server
+ permit udp host 172.16.8.44 host 172.16.7.4
+ permit udp host 172.16.7.4 host 172.16.8.44
+exit
+
+ip access-list extended ACL-MARK-CLINIC-VOICE
+ remark Class C2: Ingress Clinic VoIP Bearer Audio & Signaling
+ permit udp 172.16.7.224 0.0.0.31 any
+ permit tcp 172.16.7.224 0.0.0.31 any
+exit
+
+ip access-list extended ACL-MARK-CLINIC-IMAGING
+ remark Class C3: Ingress Clinic PACS DICOM Queries & Cache Replication
+ permit tcp any host 172.16.7.7 eq 104
+ permit tcp host 172.16.7.7 any eq 104
+ permit tcp host 172.16.8.36 host 172.16.7.7
+ permit tcp host 172.16.7.7 host 172.16.8.36
+exit
+
+ip access-list extended ACL-MARK-CLINIC-ADMIN
+ remark Class C4: Ingress Clinic Admin EHR Queries & DNS
+ permit tcp 172.16.8.0 0.0.0.31 host 172.16.7.4 eq www
+ permit tcp 172.16.8.0 0.0.0.31 host 172.16.7.4 eq 443
+ permit udp any host 172.16.7.4 eq domain
+exit
+
+ip access-list extended ACL-MARK-CLINIC-GUEST
+ remark Class C5: Ingress Clinic Guest Scavenger Traffic
+ permit ip 172.16.6.128 0.0.0.127 any
+exit
+
+! --- Quality of Service (QoS): MQC Ingress Class-Maps ---
+class-map match-any CM-DISTRO-VITALS
+ match access-group name ACL-MARK-CLINIC-VITALS
+exit
+
+class-map match-any CM-DISTRO-VOICE
+ match access-group name ACL-MARK-CLINIC-VOICE
+exit
+
+class-map match-any CM-DISTRO-IMAGING
+ match access-group name ACL-MARK-CLINIC-IMAGING
+exit
+
+class-map match-any CM-DISTRO-ADMIN
+ match access-group name ACL-MARK-CLINIC-ADMIN
+exit
+
+class-map match-any CM-DISTRO-GUEST
+ match access-group name ACL-MARK-CLINIC-GUEST
+exit
+
+! --- Quality of Service (QoS): MQC Ingress Marking Policy-Map ---
+policy-map PM-DISTRO-MARK-INGRESS
+ class CM-DISTRO-VITALS
+  set dscp ef
+ class CM-DISTRO-VOICE
+  set dscp cs5
+ class CM-DISTRO-IMAGING
+  set dscp af31
+ class CM-DISTRO-ADMIN
+  set dscp af21
+ class CM-DISTRO-GUEST
+  set dscp cs1
+ class class-default
+  set dscp default
 exit
 
 ! --- Inter-VLAN Routing: Switch Virtual Interfaces (SVIs) & HSRP v2 ---
@@ -161,6 +234,7 @@ interface Vlan10
  description SVI_Clinic_Clinical_Gateway
  ip address 172.16.8.35 255.255.255.224
  ip helper-address 172.16.7.4
+ service-policy input PM-DISTRO-MARK-INGRESS
  standby version 2
  standby 10 ip 172.16.8.33
  standby 10 priority 100
@@ -173,6 +247,7 @@ interface Vlan30
  description SVI_Clinic_Admin_Gateway
  ip address 172.16.8.3 255.255.255.224
  ip helper-address 172.16.7.4
+ service-policy input PM-DISTRO-MARK-INGRESS
  standby version 2
  standby 30 ip 172.16.8.1
  standby 30 priority 110
@@ -186,6 +261,7 @@ interface Vlan40
  description SVI_Clinic_Guest_Gateway
  ip address 172.16.6.131 255.255.255.128
  ip helper-address 172.16.7.4
+ service-policy input PM-DISTRO-MARK-INGRESS
  standby version 2
  standby 40 ip 172.16.6.129
  standby 40 priority 110
@@ -199,6 +275,7 @@ interface Vlan60
  description SVI_Clinic_Voice_Gateway
  ip address 172.16.7.227 255.255.255.224
  ip helper-address 172.16.7.4
+ service-policy input PM-DISTRO-MARK-INGRESS
  standby version 2
  standby 60 ip 172.16.7.225
  standby 60 priority 100
@@ -322,4 +399,38 @@ write memory
 ! SW-D4# ping 172.16.8.10              ! Ping PC-CLINIC-ADM1 (VLAN 30 Admin) -> Success rate 100 percent
 ! SW-D4# ping 172.16.7.234             ! Ping PHONE-CLINIC-601 (VLAN 60 Voice) -> Success rate 100 percent
 ! SW-D4# ping 172.16.8.113             ! Ping Core Router R2 Gig0/1 Transit Link -> Success rate 100 percent
+!
+! 9. Quality of Service (QoS) Verification & Policy Status
+! ------------------------------------------------------------------------------
+! Step 1: Verify global MLS QoS status on remote distribution switch:
+! SW-D4# show mls qos
+!   QoS is enabled
+!   QoS ip packet dscp rewrite is enabled
+!
+! Step 2: Confirm DSCP trust on routed uplink to R2:
+! SW-D4# show mls qos interface GigabitEthernet0/1
+!   GigabitEthernet0/1
+!   trust state: trust dscp
+!   trust mode: trust dscp
+!   COS override: dis
+!   default COS: 0
+!   pass-through: none
+!
+! Step 3: Inspect SVI Ingress Service-Policy:
+! SW-D4# show policy-map interface Vlan30
+!   Vlan30 
+!     Service-policy input: PM-DISTRO-MARK-INGRESS
+!       Class-map: CM-DISTRO-ADMIN (match-any)
+!         10 packets
+!         Match: access-group name ACL-MARK-CLINIC-ADMIN
+!         QoS Set
+!           dscp af21
+!       Class-map: CM-DISTRO-GUEST (match-any)
+!         0 packets
+!       Class-map: class-default (match-any)
+!         0 packets
+! [NOTE ON PACKET TRACER 8.x LIMITATION]
+! In Packet Tracer 8.x, Catalyst 3560 accepts 'mls qos' and parses 'policy-map' syntax,
+! but hardware queue scheduling and packet rate limiting are stubbed. Drop counters
+! and strict LLQ serialization operate on Core Routers R1 and R2 across WAN serial links.
 ! ==============================================================================

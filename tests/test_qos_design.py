@@ -156,6 +156,83 @@ def test_viva_defense_questions_present():
     
     print("  [PASS] test_viva_defense_questions_present (Viva defense cheat sheet verified)")
 
+def test_qos_device_configurations():
+    """Verify class-maps, policy-maps, and service-policies in device configs."""
+    configs_dir = os.path.join(PROJECT_ROOT, "configs")
+    
+    # 1. Verify Core Routers R1 and R2
+    for r in ["R1", "R2"]:
+        for ext in [".cfg", ".txt"]:
+            path = os.path.join(configs_dir, r, f"{r}{ext}")
+            assert os.path.isfile(path), f"Missing config file: {path}"
+            with open(path, "r", encoding="utf-8") as f:
+                cfg = f.read()
+            assert "class-map match-any CM-VITALS" in cfg
+            assert "class-map match-any CM-VOICE" in cfg
+            assert "class-map match-any CM-IMAGING" in cfg
+            assert "class-map match-any CM-ADMIN" in cfg
+            assert "policy-map PM-WAN-EDGE-OUT" in cfg
+            assert "priority percent 25" in cfg
+            assert "bandwidth percent 20" in cfg
+            assert "bandwidth percent 15" in cfg
+            assert "fair-queue" in cfg
+            assert "service-policy output PM-WAN-EDGE-OUT" in cfg
+            assert "show policy-map interface Serial0/0/0" in cfg
+            assert "show policy-map interface Serial0/0/1" in cfg
+
+    # 2. Verify Multilayer Distribution Switches SW-D1, SW-D2, SW-D3, SW-D4
+    for sw in ["SW-D1", "SW-D2", "SW-D3", "SW-D4"]:
+        for ext in [".cfg", ".txt"]:
+            path = os.path.join(configs_dir, sw, f"{sw}{ext}")
+            assert os.path.isfile(path), f"Missing config file: {path}"
+            with open(path, "r", encoding="utf-8") as f:
+                cfg = f.read()
+            assert "mls qos" in cfg
+            assert "mls qos trust dscp" in cfg
+            assert "class-map match-any CM-DISTRO-" in cfg
+            assert "policy-map PM-DISTRO-MARK-INGRESS" in cfg
+            assert "service-policy input PM-DISTRO-MARK-INGRESS" in cfg
+            assert "show mls qos" in cfg
+
+    print("  [PASS] test_qos_device_configurations (R1, R2, SW-D1-D4 QoS blocks verified)")
+
+def test_qos_experiment_document():
+    """Verify verification/qos_experiment.md contains all experiment steps and templates."""
+    exp_md = os.path.join(PROJECT_ROOT, "verification", "qos_experiment.md")
+    assert os.path.isfile(exp_md), f"Missing experiment doc: {exp_md}"
+    with open(exp_md, "r", encoding="utf-8") as f:
+        content = f.read()
+
+    # Four concurrent streams
+    assert "Stream 1" in content and "Bulk TCP" in content
+    assert "Stream 2" in content and "UDP" in content and "Telemetry" in content
+    assert "Stream 3" in content and "Guest" in content
+    assert "Stream 4" in content and "VoIP" in content and "PHONE" in content
+
+    # Simulation Mode & CLI counter capture
+    assert "Simulation Mode" in content
+    assert "ToS" in content or "Type of Service" in content
+    assert "0xB8" in content and "0x68" in content
+    assert "show policy-map interface Serial0/0/0" in content
+
+    # Before and after comparison tables
+    assert "Phase A: Establishing the Baseline" in content or "Phase A" in content
+    assert "Phase B: Production Run" in content or "Phase B" in content
+    assert "Offered Load" in content
+    assert "Packets Matched" in content
+    assert "Dropped Packets" in content
+    assert "Avg Latency" in content
+
+    # Overcoming Packet Tracer timing coarseness
+    assert "WAN Bandwidth Constriction" in content or "clock rate 64000" in content
+    assert "1400" in content  # Payload size
+    assert "Multi-Run Averaging" in content
+
+    # Conclusion template
+    assert "Experimental Conclusion" in content or "Conclusion Template" in content
+
+    print("  [PASS] test_qos_experiment_document (4 streams, capture, tables & coarseness verified)")
+
 def run_all_tests():
     print("=" * 80)
     print("  QUALITY OF SERVICE (QoS) ARCHITECTURE & DESIGN TEST SUITE")
@@ -167,7 +244,9 @@ def run_all_tests():
     test_packet_tracer_limits_and_mqc()
     test_measurable_experiment_and_verification()
     test_viva_defense_questions_present()
-    print("\nALL 7 QoS DESIGN VERIFICATION TESTS PASSED SUCCESSFULLY!")
+    test_qos_device_configurations()
+    test_qos_experiment_document()
+    print("\nALL 9 QoS DESIGN & EXPERIMENT TESTS PASSED SUCCESSFULLY!")
 
 if __name__ == "__main__":
     run_all_tests()

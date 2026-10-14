@@ -116,6 +116,102 @@ key chain EIGRP_AUTH
   key-string CiscoHospital2026
 exit
 
+! --- Quality of Service (QoS): Extended ACLs for Traffic Classification ---
+ip access-list extended ACL-QOS-VITALS
+ remark Class C1: ICU Bedside Sensors to Central Telemetry Server
+ permit udp 172.16.7.128 0.0.0.63 host 172.16.7.4
+ remark Class C1: Surgical Theatres to Central Telemetry Server
+ permit udp 172.16.7.64 0.0.0.63 host 172.16.7.4
+ remark Class C1: Remote Clinic Triage Station to Central Server
+ permit udp host 172.16.8.44 host 172.16.7.4
+ remark Class C1: Server Return Telemetry Traffic & Sync
+ permit udp host 172.16.7.4 172.16.7.128 0.0.0.63
+ permit udp host 172.16.7.4 172.16.7.64 0.0.0.63
+ permit udp host 172.16.7.4 host 172.16.8.44
+exit
+
+ip access-list extended ACL-QOS-VOICE
+ remark Class C2: Main Voice Subnet to Clinic Voice Subnet RTP
+ permit udp 172.16.6.0 0.0.0.127 172.16.7.224 0.0.0.31
+ permit udp 172.16.7.224 0.0.0.31 172.16.6.0 0.0.0.127
+ remark Class C2: Dynamic RTP Bearer Audio Streams
+ permit udp any any range 16384 32767
+ remark Class C2: Session Initiation Protocol (SIP) Signaling
+ permit udp any any eq 5060
+ permit tcp any any eq 5060
+ remark Class C2: Skinny Call Control Protocol (SCCP) Signaling
+ permit tcp any any eq 2000
+exit
+
+ip access-list extended ACL-QOS-IMAGING
+ remark Class C3: DICOM Medical Image Transfers to PACS Server
+ permit tcp any host 172.16.7.7 eq 104
+ permit tcp host 172.16.7.7 any eq 104
+ remark Class C3: PACS Web Viewer & Image Retrieval
+ permit tcp any host 172.16.7.7 eq 8080
+ permit tcp any host 172.16.7.7 eq 8443
+ remark Class C3: Clinic Cache Bulk Replication (FTP/TFTP Imaging Transfers)
+ permit tcp host 172.16.8.36 host 172.16.7.7
+ permit tcp host 172.16.7.7 host 172.16.8.36
+exit
+
+ip access-list extended ACL-QOS-ADMIN
+ remark Class C4: Electronic Health Record Web Portal Access
+ permit tcp 172.16.4.0 0.0.1.255 host 172.16.7.4 eq www
+ permit tcp 172.16.4.0 0.0.1.255 host 172.16.7.4 eq 443
+ permit tcp 172.16.8.0 0.0.0.31 host 172.16.7.4 eq www
+ permit tcp 172.16.8.0 0.0.0.31 host 172.16.7.4 eq 443
+ remark Class C4: Internal Core DNS Resolver Queries
+ permit udp any host 172.16.7.4 eq domain
+ permit tcp any host 172.16.7.4 eq domain
+ remark Class C4: Secure Shell Out-of-Band Network Management
+ permit tcp 172.16.7.192 0.0.0.31 any eq 22
+ permit tcp 172.16.8.64 0.0.0.15 any eq 22
+exit
+
+! --- Quality of Service (QoS): MQC Class-Maps ---
+class-map match-any CM-VITALS
+ description Life_Critical_Bedside_ICU_Surgical_Telemetry
+ match access-group name ACL-QOS-VITALS
+ match ip dscp ef
+exit
+
+class-map match-any CM-VOICE
+ description VoIP_Bearer_Audio_and_PBX_Signaling
+ match access-group name ACL-QOS-VOICE
+ match ip dscp cs5
+ match ip dscp ef
+ match ip dscp cs3
+exit
+
+class-map match-any CM-IMAGING
+ description PACS_DICOM_Radiological_Image_Transfers
+ match access-group name ACL-QOS-IMAGING
+ match ip dscp af31
+exit
+
+class-map match-any CM-ADMIN
+ description Administrative_EHR_Portal_and_Core_Services
+ match access-group name ACL-QOS-ADMIN
+ match ip dscp af21
+ match ip dscp cs2
+exit
+
+! --- Quality of Service (QoS): MQC Policy-Map Definition ---
+policy-map PM-WAN-EDGE-OUT
+ description Disaster_Resilient_Hospital_WAN_QoS_Policy
+ class CM-VITALS
+  priority percent 25
+ class CM-VOICE
+  bandwidth percent 20
+ class CM-IMAGING
+  bandwidth percent 15
+ class CM-ADMIN
+  bandwidth percent 15
+ class class-default
+  fair-queue
+exit
+
 ! --- Primary WAN Link (Serial0/0/0 - DCE): OSPF Area 0 Backbone ---
 interface Serial0/0/0
  description Primary_WAN_Link_to_R2_Se0/0/0_OSPF_Area0
@@ -129,6 +225,7 @@ interface Serial0/0/0
  ip ospf authentication message-digest
  ip ospf message-digest-key 1 md5 CiscoHospital2026
  ip nat inside
+ service-policy output PM-WAN-EDGE-OUT
  no shutdown
 exit
 
@@ -141,6 +238,7 @@ interface Serial0/0/1
  ip authentication mode eigrp 100 md5
  ip authentication key-chain eigrp 100 EIGRP_AUTH
  ip nat inside
+ service-policy output PM-WAN-EDGE-OUT
  no shutdown
 exit
 
@@ -346,4 +444,80 @@ write memory
 !    Dynamic mappings:
 !    -- Inside Source
 !    [Id: 1] access-list NAT-ACL interface GigabitEthernet0/2 ref count 3
+!
+! 9. Verify Egress QoS Policy & Queue Counters on Primary WAN (Serial0/0/0):
+!    R1# show policy-map interface Serial0/0/0
+!    EXPECTED OUTPUT:
+!    Serial0/0/0 
+!      Service-policy output: PM-WAN-EDGE-OUT
+!        Class-map: CM-VITALS (match-any)
+!          50 packets, 4200 bytes
+!          5 minute offered rate 8000 bps, drop rate 0 BPS
+!          Match: access-group name ACL-QOS-VITALS
+!            50 packets, 4200 bytes
+!          Queueing
+!            Strict Priority
+!            Output Queue: Conversation 264
+!            Bandwidth 25 (%)
+!            Bandwidth 512 (kbps) Burst 12800 (Bytes)
+!            (pkts matched/bytes matched) 50/4200
+!            (total drops/bytes drops) 0/0
+!        Class-map: CM-VOICE (match-any)
+!          0 packets, 0 bytes
+!          5 minute offered rate 0 BPS, drop rate 0 BPS
+!          Match: access-group name ACL-QOS-VOICE
+!          Queueing
+!            Output Queue: Conversation 265
+!            Bandwidth 20 (%)
+!            Bandwidth 409 (kbps) Max Threshold 64 (packets)
+!            (total drops/bytes drops) 0/0
+!        Class-map: CM-IMAGING (match-any)
+!          100 packets, 142800 bytes
+!          5 minute offered rate 1820000 bps, drop rate 45000 BPS
+!          Match: access-group name ACL-QOS-IMAGING
+!            100 packets, 142800 bytes
+!          Queueing
+!            Output Queue: Conversation 266
+!            Bandwidth 15 (%)
+!            Bandwidth 307 (kbps) Max Threshold 64 (packets)
+!            (pkts matched/bytes matched) 100/142800
+!            (total drops/bytes drops) 12/17136
+!        Class-map: CM-ADMIN (match-any)
+!          15 packets, 1260 bytes
+!          5 minute offered rate 2000 bps, drop rate 0 BPS
+!          Match: access-group name ACL-QOS-ADMIN
+!          Queueing
+!            Output Queue: Conversation 267
+!            Bandwidth 15 (%)
+!            Bandwidth 307 (kbps) Max Threshold 64 (packets)
+!            (total drops/bytes drops) 0/0
+!        Class-map: class-default (match-any)
+!          18 packets, 1548 bytes
+!          5 minute offered rate 2000 bps, drop rate 0 BPS
+!          Match: any
+!          Queueing
+!            Flow Based Fair Queueing
+!            Maximum Number of Hashed Queues 256
+!            (total drops/bytes drops) 0/0
+!
+! 10. Verify Egress QoS Policy on Backup WAN (Serial0/0/1):
+!    R1# show policy-map interface Serial0/0/1
+!    EXPECTED OUTPUT:
+!    Serial0/0/1 
+!      Service-policy output: PM-WAN-EDGE-OUT
+!        Class-map: CM-VITALS (match-any)
+!          Bandwidth 25 (%)
+!          Bandwidth 386 (kbps) Burst 9650 (Bytes)
+!          (total drops/bytes drops) 0/0
+!        Class-map: CM-VOICE (match-any)
+!          Bandwidth 20 (%)
+!          Bandwidth 308 (kbps) Max Threshold 64 (packets)
+!        Class-map: CM-IMAGING (match-any)
+!          Bandwidth 15 (%)
+!          Bandwidth 231 (kbps) Max Threshold 64 (packets)
+!        Class-map: CM-ADMIN (match-any)
+!          Bandwidth 15 (%)
+!          Bandwidth 231 (kbps) Max Threshold 64 (packets)
+!        Class-map: class-default (match-any)
+!          Flow Based Fair Queueing
 ! ==============================================================================
