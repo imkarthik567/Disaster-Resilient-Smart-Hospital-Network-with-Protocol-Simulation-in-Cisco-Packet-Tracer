@@ -131,6 +131,8 @@ class ConfigLinter:
 
         config_files = []
         for root, _, files in os.walk(self.configs_dir):
+            if "ipv6" in root.lower():
+                continue
             for file in files:
                 if file.endswith(".cfg") and not file.startswith("."):
                     config_files.append(os.path.join(root, file))

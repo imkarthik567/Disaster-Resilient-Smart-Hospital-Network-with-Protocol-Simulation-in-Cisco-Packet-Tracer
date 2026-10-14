@@ -1,0 +1,66 @@
+! ==============================================================================
+! Generated Cisco IOS Configuration: {{ dev.name }}
+! Template: router.j2 | Pipeline: NetDevOps Jinja2 Generator
+! Disaster-Resilient Smart Hospital Network
+! ==============================================================================
+version 15.1
+service password-encryption
+no service timestamps log datetime msec
+no service timestamps debug datetime msec
+no service config
+!
+hostname {{ dev.name }}
+!
+boot-start-marker
+boot-end-marker
+!
+enable secret 5 {{ global.enable_secret }}
+!
+no ip domain-lookup
+ip domain-name {{ global.domain_name }}
+!
+username {{ global.admin_user }} privilege 15 secret 5 {{ global.admin_secret }}
+!
+{% for intf in dev.interfaces %}
+interface {{ intf.name }}
+ description {{ intf.description }}
+ ip address {{ intf.ip }} {{ intf.mask }}
+ {% if intf.clock_rate %}clock rate {{ intf.clock_rate }}{% endif %}
+ {% if intf.ospf_cost %}ip ospf cost {{ intf.ospf_cost }}{% endif %}
+ {% if intf.nat %}ip nat {{ intf.nat }}{% endif %}
+ no shutdown
+!
+{% endfor %}
+router ospf {{ global.ospf_process_id }}
+ router-id {{ dev.router_id }}
+ log-adjacency-changes
+ {% for net in dev.ospf.networks %}
+ network {{ net }}
+ {% endfor %}
+ {% for p_intf in dev.ospf.passive_interfaces %}
+ passive-interface {{ p_intf }}
+ {% endfor %}
+!
+ip classless
+ip forward-protocol nd
+!
+ip ssh version {{ global.ssh_version }}
+!
+banner motd ^C
+================================================================================
+{{ global.banner_motd }}
+================================================================================
+^C
+!
+line con 0
+ exec-timeout 5 0
+ logging synchronous
+ login local
+line aux 0
+line vty 0 4
+ exec-timeout 5 0
+ logging synchronous
+ login local
+ transport input ssh
+!
+end

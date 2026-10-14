@@ -1,0 +1,83 @@
+! ==============================================================================
+! Generated Cisco IOS Configuration: {{ dev.name }}
+! Template: access_switch.j2 | Pipeline: NetDevOps Jinja2 Generator
+! Disaster-Resilient Smart Hospital Network
+! ==============================================================================
+version 15.0
+service password-encryption
+no service timestamps log datetime msec
+no service timestamps debug datetime msec
+no service config
+!
+hostname {{ dev.name }}
+!
+boot-start-marker
+boot-end-marker
+!
+enable secret 5 {{ global.enable_secret }}
+!
+no ip domain-lookup
+ip domain-name {{ global.domain_name }}
+!
+username {{ global.admin_user }} privilege 15 secret 5 {{ global.admin_secret }}
+!
+vtp mode transparent
+!
+{% for v in vlans %}
+vlan {{ v.id }}
+ name {{ v.name }}
+!
+{% endfor %}
+spanning-tree mode {{ dev.stp_mode }}
+spanning-tree portfast default
+spanning-tree portfast bpduguard default
+!
+{% for t in dev.trunks %}
+interface {{ t.name }}
+ description {{ t.description }}
+ switchport mode trunk
+ switchport trunk native vlan {{ t.native_vlan }}
+ switchport trunk allowed vlan {{ t.allowed_vlans }}
+ no shutdown
+!
+{% endfor %}
+{% for ap in dev.access_ports %}
+interface range {{ ap.range }}
+ switchport mode access
+ switchport access vlan {{ ap.vlan }}
+ {% if ap.portfast %}spanning-tree portfast{% endif %}
+ {% if ap.bpduguard %}spanning-tree bpduguard enable{% endif %}
+ {% if ap.shutdown %}shutdown{% else %}no shutdown{% endif %}
+!
+{% endfor %}
+interface Vlan99
+ description Out-of-Band Management Interface
+ ip address {{ dev.mgmt_ip }} {{ dev.mgmt_mask }}
+ no shutdown
+!
+ip default-gateway {{ dev.default_gateway }}
+!
+ip ssh version {{ global.ssh_version }}
+!
+banner motd ^C
+================================================================================
+{{ global.banner_motd }}
+================================================================================
+^C
+!
+line con 0
+ exec-timeout 5 0
+ logging synchronous
+ login local
+line vty 0 4
+ exec-timeout 5 0
+ logging synchronous
+ login local
+ transport input ssh
+line vty 5 15
+ exec-timeout 5 0
+ logging synchronous
+ login local
+ transport input ssh
+!
+end

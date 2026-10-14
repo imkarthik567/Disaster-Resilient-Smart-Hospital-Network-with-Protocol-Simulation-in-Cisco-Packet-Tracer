@@ -1,0 +1,307 @@
+# ==============================================================================
+# Single Source of Truth (SSOT): Disaster-Resilient Smart Hospital Network
+# Team: Rohit Kathiravan (24BCE0441), Karthikeyan S (24BCT0332)
+# VIT Vellore — Computer Networks Project
+# ==============================================================================
+
+global:
+  domain_name: "hospital.local"
+  enable_secret: "$1$mERr$hx5rVt7rPNoS4wqbXKX7m0"
+  admin_user: "admin"
+  admin_secret: "$1$mERr$hx5rVt7rPNoS4wqbXKX7m0"
+  ssh_version: 2
+  banner_motd: "AUTHORIZED ACCESS ONLY - DISASTER-RESILIENT SMART HOSPITAL NETWORK"
+  ospf_process_id: 1
+
+vlans:
+  - id: 10
+    name: "ICU_TELEMETRY"
+  - id: 20
+    name: "SURGERY_THEATRE"
+  - id: 30
+    name: "GENERAL_ADMIN"
+  - id: 40
+    name: "IMAGING_PACS"
+  - id: 50
+    name: "SERVER_FARM"
+  - id: 60
+    name: "GUEST_WIFI"
+  - id: 99
+    name: "NOC_MANAGEMENT"
+  - id: 999
+    name: "PARKING_LOT"
+
+devices:
+  # ----------------------------------------------------------------------------
+  # CORE ROUTER R1
+  # ----------------------------------------------------------------------------
+  - name: "R1"
+    type: "router"
+    router_id: "172.16.8.106"
+    interfaces:
+      - name: "Loopback0"
+        ip: "172.16.8.106"
+        mask: "255.255.255.255"
+        description: "OSPF Router-ID & Management Loopback"
+      - name: "GigabitEthernet0/0"
+        ip: "172.16.8.90"
+        mask: "255.255.255.252"
+        description: "Routed Uplink to SW-D1 Gi0/2"
+        ospf_cost: 1
+      - name: "GigabitEthernet0/1"
+        ip: "172.16.8.94"
+        mask: "255.255.255.252"
+        description: "Routed Uplink to SW-D2 Gi0/2"
+        ospf_cost: 1
+      - name: "GigabitEthernet0/2"
+        ip: "172.16.8.102"
+        mask: "255.255.255.252"
+        description: "Internet Edge NAT/PAT to EDGE-ISP"
+        nat: "outside"
+      - name: "Serial0/0/0"
+        ip: "172.16.8.81"
+        mask: "255.255.255.252"
+        description: "Primary Serial WAN to R2 (Area 0 Backbone)"
+        clock_rate: 128000
+        ospf_cost: 64
+      - name: "Serial0/0/1"
+        ip: "172.16.8.85"
+        mask: "255.255.255.252"
+        description: "Secondary Backup Serial WAN to R2"
+        clock_rate: 128000
+        ospf_cost: 500
+    ospf:
+      networks:
+        - "172.16.8.80 0.0.0.3 area 0"
+        - "172.16.8.84 0.0.0.3 area 0"
+        - "172.16.8.88 0.0.0.3 area 0"
+        - "172.16.8.92 0.0.0.3 area 0"
+        - "172.16.8.106 0.0.0.0 area 0"
+      passive_interfaces:
+        - "GigabitEthernet0/2"
+
+  # ----------------------------------------------------------------------------
+  # REMOTE CLINIC ROUTER R2
+  # ----------------------------------------------------------------------------
+  - name: "R2"
+    type: "router"
+    router_id: "172.16.8.107"
+    interfaces:
+      - name: "Loopback0"
+        ip: "172.16.8.107"
+        mask: "255.255.255.255"
+        description: "OSPF Router-ID & Management Loopback"
+      - name: "GigabitEthernet0/0"
+        ip: "172.16.8.98"
+        mask: "255.255.255.252"
+        description: "Routed Uplink to SW-D3 Gi0/1"
+        ospf_cost: 1
+      - name: "Serial0/0/0"
+        ip: "172.16.8.82"
+        mask: "255.255.255.252"
+        description: "Primary Serial WAN to R1 (Area 0 Backbone)"
+        ospf_cost: 64
+      - name: "Serial0/0/1"
+        ip: "172.16.8.86"
+        mask: "255.255.255.252"
+        description: "Secondary Backup Serial WAN to R1"
+        ospf_cost: 500
+    ospf:
+      networks:
+        - "172.16.8.80 0.0.0.3 area 0"
+        - "172.16.8.84 0.0.0.3 area 0"
+        - "172.16.8.96 0.0.0.3 area 0"
+        - "172.16.8.107 0.0.0.0 area 0"
+      passive_interfaces: []
+
+  # ----------------------------------------------------------------------------
+  # PRIMARY DISTRIBUTION SWITCH SW-D1
+  # ----------------------------------------------------------------------------
+  - name: "SW-D1"
+    type: "distribution_switch"
+    router_id: "172.16.8.104"
+    stp_mode: "rapid-pvst"
+    stp_roots:
+      primary: [10, 30, 50]
+      secondary: [20, 40, 60, 99]
+    svis:
+      - vlan: 10
+        ip: "172.16.8.35"
+        mask: "255.255.255.224"
+        hsrp_group: 10
+        hsrp_vip: "172.16.8.33"
+        hsrp_priority: 120
+        hsrp_preempt: true
+        helper_address: "172.16.5.10"
+      - vlan: 20
+        ip: "172.16.8.51"
+        mask: "255.255.255.240"
+        hsrp_group: 20
+        hsrp_vip: "172.16.8.49"
+        hsrp_priority: 110
+        hsrp_preempt: false
+        helper_address: "172.16.5.10"
+      - vlan: 30
+        ip: "172.16.8.3"
+        mask: "255.255.255.224"
+        hsrp_group: 30
+        hsrp_vip: "172.16.8.1"
+        hsrp_priority: 120
+        hsrp_preempt: true
+        helper_address: "172.16.5.10"
+      - vlan: 40
+        ip: "172.16.6.131"
+        mask: "255.255.255.128"
+        hsrp_group: 40
+        hsrp_vip: "172.16.6.129"
+        hsrp_priority: 110
+        hsrp_preempt: false
+        helper_address: "172.16.5.10"
+      - vlan: 50
+        ip: "172.16.5.2"
+        mask: "255.255.255.0"
+        hsrp_group: 50
+        hsrp_vip: "172.16.5.1"
+        hsrp_priority: 120
+        hsrp_preempt: true
+      - vlan: 60
+        ip: "172.16.7.2"
+        mask: "255.255.255.0"
+        hsrp_group: 60
+        hsrp_vip: "172.16.7.1"
+        hsrp_priority: 110
+        hsrp_preempt: false
+        helper_address: "172.16.5.10"
+      - vlan: 99
+        ip: "172.16.8.67"
+        mask: "255.255.255.240"
+    interfaces:
+      - name: "GigabitEthernet0/2"
+        ip: "172.16.8.89"
+        mask: "255.255.255.252"
+        description: "Routed Uplink to R1 Gi0/0"
+      - name: "Loopback0"
+        ip: "172.16.8.104"
+        mask: "255.255.255.255"
+        description: "OSPF Router ID"
+    ospf:
+      networks:
+        - "172.16.8.88 0.0.0.3 area 0"
+        - "172.16.8.104 0.0.0.0 area 0"
+        - "172.16.0.0 0.0.255.255 area 1"
+      passive_interfaces:
+        - "Vlan10"
+        - "Vlan20"
+        - "Vlan30"
+        - "Vlan40"
+        - "Vlan60"
+
+  # ----------------------------------------------------------------------------
+  # SECONDARY DISTRIBUTION SWITCH SW-D2
+  # ----------------------------------------------------------------------------
+  - name: "SW-D2"
+    type: "distribution_switch"
+    router_id: "172.16.8.105"
+    stp_mode: "rapid-pvst"
+    stp_roots:
+      primary: [20, 40, 60, 99]
+      secondary: [10, 30, 50]
+    svis:
+      - vlan: 10
+        ip: "172.16.8.34"
+        mask: "255.255.255.224"
+        hsrp_group: 10
+        hsrp_vip: "172.16.8.33"
+        hsrp_priority: 110
+        hsrp_preempt: false
+        helper_address: "172.16.5.10"
+      - vlan: 20
+        ip: "172.16.8.50"
+        mask: "255.255.255.240"
+        hsrp_group: 20
+        hsrp_vip: "172.16.8.49"
+        hsrp_priority: 120
+        hsrp_preempt: true
+        helper_address: "172.16.5.10"
+      - vlan: 30
+        ip: "172.16.8.2"
+        mask: "255.255.255.224"
+        hsrp_group: 30
+        hsrp_vip: "172.16.8.1"
+        hsrp_priority: 110
+        hsrp_preempt: false
+        helper_address: "172.16.5.10"
+      - vlan: 40
+        ip: "172.16.6.130"
+        mask: "255.255.255.128"
+        hsrp_group: 40
+        hsrp_vip: "172.16.6.129"
+        hsrp_priority: 120
+        hsrp_preempt: true
+        helper_address: "172.16.5.10"
+      - vlan: 50
+        ip: "172.16.5.3"
+        mask: "255.255.255.0"
+        hsrp_group: 50
+        hsrp_vip: "172.16.5.1"
+        hsrp_priority: 110
+        hsrp_preempt: false
+      - vlan: 60
+        ip: "172.16.7.3"
+        mask: "255.255.255.0"
+        hsrp_group: 60
+        hsrp_vip: "172.16.7.1"
+        hsrp_priority: 120
+        hsrp_preempt: true
+        helper_address: "172.16.5.10"
+      - vlan: 99
+        ip: "172.16.8.66"
+        mask: "255.255.255.240"
+    interfaces:
+      - name: "GigabitEthernet0/2"
+        ip: "172.16.8.93"
+        mask: "255.255.255.252"
+        description: "Routed Uplink to R1 Gi0/1"
+      - name: "Loopback0"
+        ip: "172.16.8.105"
+        mask: "255.255.255.255"
+        description: "OSPF Router ID"
+    ospf:
+      networks:
+        - "172.16.8.92 0.0.0.3 area 0"
+        - "172.16.8.105 0.0.0.0 area 0"
+        - "172.16.0.0 0.0.255.255 area 1"
+      passive_interfaces:
+        - "Vlan10"
+        - "Vlan20"
+        - "Vlan30"
+        - "Vlan40"
+        - "Vlan60"
+
+  # ----------------------------------------------------------------------------
+  # ACCESS SWITCH SW-A1 (ICU Telemetry)
+  # ----------------------------------------------------------------------------
+  - name: "SW-A1"
+    type: "access_switch"
+    primary_vlan: 10
+    stp_mode: "rapid-pvst"
+    trunks:
+      - name: "GigabitEthernet0/1"
+        allowed_vlans: "10,60,99"
+        native_vlan: 999
+        description: "Uplink to SW-D1"
+      - name: "GigabitEthernet0/2"
+        allowed_vlans: "10,60,99"
+        native_vlan: 999
+        description: "Uplink to SW-D2"
+    access_ports:
+      - range: "FastEthernet0/1 - 6"
+        vlan: 10
+        portfast: true
+        bpduguard: true
+      - range: "FastEthernet0/7 - 24"
+        vlan: 999
+        shutdown: true
+    mgmt_ip: "172.16.8.68"
+    mgmt_mask: "255.255.255.240"
+    default_gateway: "172.16.8.65"

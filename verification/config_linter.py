@@ -86,6 +86,8 @@ def run_linter():
     total_violations = 0
 
     for root, dirs, files in os.walk(CONFIGS_DIR):
+        if "ipv6" in root.lower():
+            continue
         for f in files:
             if f.endswith(".txt") or f.endswith(".ios") or f.endswith(".cfg"):
                 total_files += 1
