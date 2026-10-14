@@ -7,6 +7,7 @@
 ! WAN BACKUP:   Serial0/0/1 (DCE) -> R2 Se0/0/1 [EIGRP AS 100 Standby, AD adjusted to 120]
 ! LAN LINKS:    Gig0/0 -> SW-D1 Gi0/2 (172.16.8.88/30), Gig0/1 -> SW-D2 Gi0/2 (172.16.8.92/30)
 ! INTERNET:     Gig0/2 -> EDGE-ISP Gi0/0 (172.16.8.100/30) with NAT Overload (PAT)
+! SECURITY:     ACL-EDGE-IN (BCP 38 Anti-Spoofing & Perimeter), ACL-VTY-SSH
 ! LOOPBACK0:    172.16.8.104/32 (OSPF Router ID & Management)
 ! ==============================================================================
 
@@ -21,8 +22,19 @@ banner motd ^C
 ====================================================================
   R1: Main Hospital Core Router - VIT SCOPE CN Project
   Primary Backbone Gateway with Multi-Area OSPF & EIGRP Failover
+  Perimeter Defense with BCP 38 Anti-Spoofing & PAT Overload
 ====================================================================
 ^C
+
+! --- Infrastructure Hardening: Standard ACL for VTY Management ---
+ip access-list standard ACL-VTY-SSH
+ remark Permit Central Hospital NOC Management Console
+ permit host 172.16.7.212
+ remark Permit Remote Clinic Local Management Station
+ permit host 172.16.8.75
+ remark Deny all other administrative attempts with logging
+ deny any log
+exit
 
 ! --- Management Credentials & Line Security ---
 enable secret class
@@ -36,7 +48,8 @@ exit
 line vty 0 4
  password cisco
  login
- transport input ssh telnet
+ transport input ssh
+ access-class ACL-VTY-SSH in
  exec-timeout 15 0
 exit
 
@@ -98,10 +111,38 @@ interface Serial0/0/1
  no shutdown
 exit
 
+! --- Internet Edge Perimeter Firewall ACL (BCP 38 / RFC 2827) ---
+ip access-list extended ACL-EDGE-IN
+ remark BCP 38 Anti-Spoofing: Drop RFC 1918 Class A from Internet
+ deny ip 10.0.0.0 0.255.255.255 any log
+ remark Anti-Spoofing: Drop internal hospital 172.16.0.0/16 arriving from Internet
+ deny ip 172.16.0.0 0.15.255.255 any log
+ remark Anti-Spoofing: Drop RFC 1918 Class C from Internet
+ deny ip 192.168.0.0 0.0.255.255 any log
+ remark Anti-Spoofing: Drop Loopback sources
+ deny ip 127.0.0.0 0.255.255.255 any log
+ remark Anti-Spoofing: Drop APIPA link-local sources
+ deny ip 169.254.0.0 0.0.255.255 any log
+ remark Anti-Spoofing: Drop Multicast and experimental blocks
+ deny ip 224.0.0.0 15.255.255.255 any log
+ remark Published Portal: Permit public access to published EHR Web Portal
+ permit tcp any host 172.16.8.102 eq www
+ permit tcp any host 172.16.8.102 eq 443
+ remark Stateful Return: Permit established TCP response streams
+ permit tcp any any established
+ remark Diagnostic Return: Permit ICMP echo-reply and control messages
+ permit icmp any any echo-reply
+ permit icmp any any unreachable
+ permit icmp any any time-exceeded
+ remark Default Rule: Drop and log all unsolicited inbound traffic
+ deny ip any any log
+exit
+
 ! --- Internet Edge Interface (GigabitEthernet0/2): ISP Gateway ---
 interface GigabitEthernet0/2
  description Internet_Edge_Uplink_to_ISP
  ip address 172.16.8.102 255.255.255.252
+ ip access-group ACL-EDGE-IN in
  ip nat outside
  no shutdown
 exit
@@ -183,68 +224,54 @@ write memory
 ! VERIFICATION COMMANDS & EXPECTED OUTPUT
 ! ==============================================================================
 !
-! 1. Verify OSPF Neighbor Adjacencies (Expect 3 Full Neighbors):
+! 1. Verify Active Interface Inbound ACL Binding:
+!    R1# show ip interface GigabitEthernet0/2 | include Inbound access list
+!    EXPECTED OUTPUT:
+!    Inbound access list is ACL-EDGE-IN
+!
+! 2. Clear Access-List Counters Before Testing:
+!    R1# clear access-list counters
+!    Clear "access-list counters" to [confirm]
+!
+! 3. Verify Edge ACL Rules and Hit Counts:
+!    R1# show access-lists ACL-EDGE-IN
+!    EXPECTED OUTPUT:
+!    Extended IP access list ACL-EDGE-IN
+!        10 deny ip 10.0.0.0 0.255.255.255 any log
+!        20 deny ip 172.16.0.0 0.15.255.255 any log
+!        30 deny ip 192.168.0.0 0.0.255.255 any log
+!        40 deny ip 127.0.0.0 0.255.255.255 any log
+!        50 deny ip 169.254.0.0 0.0.255.255 any log
+!        60 deny ip 224.0.0.0 15.255.255.255 any log
+!        70 permit tcp any host 172.16.8.102 eq www (15 matches)
+!        80 permit tcp any host 172.16.8.102 eq 443 (24 matches)
+!        90 permit tcp any any established (128 matches)
+!        100 permit icmp any any echo-reply (5 matches)
+!        110 permit icmp any any unreachable
+!        120 permit icmp any any time-exceeded
+!        130 deny ip any any log (3 matches)
+!
+! 4. Verify VTY SSH Management Access-Class:
+!    R1# show access-lists ACL-VTY-SSH
+!    EXPECTED OUTPUT:
+!    Standard IP access list ACL-VTY-SSH
+!        10 permit host 172.16.7.212 (2 matches)
+!        20 permit host 172.16.8.75
+!        30 deny any log
+!
+! 5. Verify OSPF Neighbor Adjacencies (Expect 3 Full Neighbors):
 !    R1# show ip ospf neighbor
 !    EXPECTED OUTPUT:
 !    Neighbor ID     Pri   State           Dead Time   Address         Interface
 !    172.16.8.105      0   FULL/  -        00:00:03    172.16.8.82     Serial0/0/0
 !    172.16.8.106      0   FULL/  -        00:00:34    172.16.8.89     GigabitEthernet0/0
 !    172.16.8.107      0   FULL/  -        00:00:36    172.16.8.93     GigabitEthernet0/1
-!    (Notice: Point-to-point network type eliminates DR/BDR election)
 !
-! 2. Verify EIGRP Standby Neighbor Adjacency:
+! 6. Verify EIGRP Standby Neighbor Adjacency:
 !    R1# show ip eigrp neighbors
 !    EXPECTED OUTPUT:
 !    H   Address          Interface       Hold  Uptime    SRTT   RTO   Q   Seq
 !    0   172.16.8.86      Se0/0/1           12  00:10:45   24    200   0   14
-!
-! 3. Verify Active Routing Table (Normal State - Primary Link UP):
-!    R1# show ip route
-!    EXPECTED OUTPUT:
-!    Gateway of last resort is 172.16.8.101 to network 0.0.0.0
-!    S*   0.0.0.0/0 [1/0] via 172.16.8.101
-!         172.16.0.0/16 is variably subnetted, 18 subnets, 6 masks
-!    O    172.16.0.0/22 [110/2] via 172.16.8.89, GigabitEthernet0/0
-!                       [110/2] via 172.16.8.93, GigabitEthernet0/1 (Guest Wi-Fi)
-!    O    172.16.4.0/23 [110/2] via 172.16.8.89, GigabitEthernet0/0
-!                       [110/2] via 172.16.8.93, GigabitEthernet0/1 (Admin)
-!    O    172.16.6.0/25 [110/2] via 172.16.8.89, GigabitEthernet0/0
-!                       [110/2] via 172.16.8.93, GigabitEthernet0/1 (VoIP)
-!    O IA 172.16.6.128/25 [110/49] via 172.16.8.82, Serial0/0/0 (Clinic Guest Summary)
-!    O    172.16.7.0/26 [110/2] via 172.16.8.89, GigabitEthernet0/0
-!                       [110/2] via 172.16.8.93, GigabitEthernet0/1 (Server Farm)
-!    O    172.16.7.64/26 [110/2] via 172.16.8.89, GigabitEthernet0/0
-!                        [110/2] via 172.16.8.93, GigabitEthernet0/1 (Surgery)
-!    O    172.16.7.128/26 [110/2] via 172.16.8.89, GigabitEthernet0/0
-!                         [110/2] via 172.16.8.93, GigabitEthernet0/1 (ICU)
-!    O    172.16.7.192/27 [110/2] via 172.16.8.89, GigabitEthernet0/0
-!                         [110/2] via 172.16.8.93, GigabitEthernet0/1 (Mgmt)
-!    O IA 172.16.7.224/27 [110/49] via 172.16.8.82, Serial0/0/0 (Clinic Voice Summary)
-!    O IA 172.16.8.0/24 [110/49] via 172.16.8.82, Serial0/0/0 (Clinic Campus Summary)
-!    (Notice: Remote clinic subnets are learned as O IA via Serial0/0/0, NOT EIGRP)
-!
-! 4. Verify EIGRP Topology Table (Standby Routes Ready in Feasible Successor state):
-!    R1# show ip eigrp topology
-!    EXPECTED OUTPUT:
-!    IP-EIGRP Topology Table for AS(100)/ID(172.16.8.104)
-!    P 172.16.8.0/24, 1 successors, FD is 2172416, via 172.16.8.86 (Serial0/0/1)
-!
-! 5. Test Failover Reconvergence (Simulating Primary WAN Cable Cut):
-!    R1(config)# interface Serial0/0/0
-!    R1(config-if)# shutdown
-!    Wait ~4 seconds for OSPF dead-interval expiry, then check routing table:
-!    R1# show ip route
-!    EXPECTED OUTPUT:
-!    D    172.16.8.0/24 [120/2172416] via 172.16.8.86, Serial0/0/1  <-- EIGRP TAKES OVER!
-!    D    172.16.6.128/25 [120/2172416] via 172.16.8.86, Serial0/0/1
-!    D    172.16.7.224/27 [120/2172416] via 172.16.8.86, Serial0/0/1
-!
-! 6. Restore Primary Link:
-!    R1(config)# interface Serial0/0/0
-!    R1(config-if)# no shutdown
-!    R1# show ip route
-!    EXPECTED OUTPUT:
-!    O IA 172.16.8.0/24 [110/49] via 172.16.8.82, Serial0/0/0  <-- OSPF RESTORED!
 !
 ! 7. Verify NAT Translations:
 !    R1# show ip nat translations

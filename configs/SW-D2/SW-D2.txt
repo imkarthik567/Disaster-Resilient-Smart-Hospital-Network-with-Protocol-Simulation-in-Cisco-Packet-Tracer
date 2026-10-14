@@ -40,15 +40,27 @@ line con 0
  exec-timeout 15 0
 exit
 
+! --- Infrastructure Hardening: Standard ACL for VTY Management ---
+ip access-list standard ACL-VTY-SSH
+ remark Permit Central Hospital NOC Management Console
+ permit host 172.16.7.212
+ remark Permit Remote Clinic Local Management Station
+ permit host 172.16.8.75
+ remark Deny all other administrative attempts with logging
+ deny any log
+exit
+
 line vty 0 4
  login local
  transport input ssh
+ access-class ACL-VTY-SSH in
  exec-timeout 15 0
 exit
 
 line vty 5 15
  login local
  transport input ssh
+ access-class ACL-VTY-SSH in
  exec-timeout 15 0
 exit
 
@@ -176,6 +188,179 @@ interface Loopback0
  no shutdown
 exit
 
+! ==============================================================================
+! ACCESS CONTROL LISTS (ACLS) & ZERO-TRUST MICROSEGMENTATION
+! ==============================================================================
+
+! --- VLAN 10 Inbound ACL: ICU Clinical Wards ---
+ip access-list extended ACL-ICU-IN
+ remark Permit client DHCP requests to relay agent
+ permit udp any any eq bootps
+ remark Permit DNS resolution to Central Server
+ permit udp any host 172.16.7.4 eq domain
+ permit tcp any host 172.16.7.4 eq domain
+ remark Permit HTTP and HTTPS to Central Hospital EHR Portal
+ permit tcp any host 172.16.7.4 eq www
+ permit tcp any host 172.16.7.4 eq 443
+ remark Permit DICOM and PACS web viewer to PACS Archive Server
+ permit tcp any host 172.16.7.7 eq 104
+ permit tcp any host 172.16.7.7 eq www
+ permit tcp any host 172.16.7.7 eq 443
+ remark Permit DR database replication to Backup Server
+ permit tcp any host 172.16.7.8 eq 443
+ remark Permit access to Remote Clinic local EHR cache
+ permit tcp any host 172.16.8.36 eq www
+ permit tcp any host 172.16.8.36 eq 443
+ remark Permit established TCP return traffic
+ permit tcp any any established
+ remark Permit ICMP diagnostic echo and echo-reply
+ permit icmp any any echo
+ permit icmp any any echo-reply
+ remark Explicitly deny and log lateral access to Admin VLAN 30
+ deny ip any 172.16.4.0 0.0.1.255 log
+ remark Explicitly deny and log lateral access to Guest VLAN 40
+ deny ip any 172.16.0.0 0.0.3.255 log
+ remark Implicit deny all other traffic
+ deny ip any any log
+exit
+
+! --- VLAN 20 Inbound ACL: Surgery Operating Theatres ---
+ip access-list extended ACL-SURGERY-IN
+ remark Permit client DHCP requests to relay agent
+ permit udp any any eq bootps
+ remark Permit DNS resolution to Central Server
+ permit udp any host 172.16.7.4 eq domain
+ permit tcp any host 172.16.7.4 eq domain
+ remark Permit HTTP and HTTPS to Central Hospital EHR Portal
+ permit tcp any host 172.16.7.4 eq www
+ permit tcp any host 172.16.7.4 eq 443
+ remark Permit DICOM image stream to PACS Archive Server
+ permit tcp any host 172.16.7.7 eq 104
+ permit tcp any host 172.16.7.7 eq www
+ permit tcp any host 172.16.7.7 eq 443
+ remark Permit established TCP return traffic
+ permit tcp any any established
+ remark Permit ICMP diagnostic echo and echo-reply
+ permit icmp any any echo
+ permit icmp any any echo-reply
+ remark Explicitly deny and log lateral access to Admin VLAN 30
+ deny ip any 172.16.4.0 0.0.1.255 log
+ remark Explicitly deny and log lateral access to Guest VLAN 40
+ deny ip any 172.16.0.0 0.0.3.255 log
+ remark Implicit deny all other traffic
+ deny ip any any log
+exit
+
+! --- VLAN 30 Inbound ACL: Hospital Administration ---
+ip access-list extended ACL-ADMIN-IN
+ remark Permit client DHCP requests to relay agent
+ permit udp any any eq bootps
+ remark Permit DNS resolution to Central Server
+ permit udp any host 172.16.7.4 eq domain
+ permit tcp any host 172.16.7.4 eq domain
+ remark Permit HTTP and HTTPS to Central Hospital EHR Portal
+ permit tcp any host 172.16.7.4 eq www
+ permit tcp any host 172.16.7.4 eq 443
+ remark Permit PACS administrative portal access
+ permit tcp any host 172.16.7.7 eq www
+ permit tcp any host 172.16.7.7 eq 443
+ remark Permit TFTP backup transfer to Backup Server
+ permit udp any host 172.16.7.8 eq tftp
+ remark Permit outbound Internet web traffic (HTTP/HTTPS)
+ permit tcp any any eq www
+ permit tcp any any eq 443
+ remark Permit established TCP return traffic
+ permit tcp any any established
+ remark Permit ICMP diagnostic echo and echo-reply
+ permit icmp any any echo
+ permit icmp any any echo-reply
+ remark Explicitly deny and log access to acute ICU VLAN 10
+ deny ip any 172.16.7.128 0.0.0.63 log
+ remark Explicitly deny and log access to Surgery VLAN 20
+ deny ip any 172.16.7.64 0.0.0.63 log
+ remark Explicitly deny and log access to Guest VLAN 40
+ deny ip any 172.16.0.0 0.0.3.255 log
+ remark Implicit deny all other traffic
+ deny ip any any log
+exit
+
+! --- VLAN 40 Inbound ACL: Hospital Guest Wi-Fi ---
+ip access-list extended ACL-GUEST-IN
+ remark Permit DHCP discovery broadcast and relay
+ permit udp any any eq bootps
+ remark Permit DNS resolution exclusively to Central DNS Server
+ permit udp any host 172.16.7.4 eq domain
+ permit tcp any host 172.16.7.4 eq domain
+ remark Explicitly deny and log any attempt to reach internal hospital networks
+ deny ip any 172.16.0.0 0.0.255.255 log
+ remark Permit outbound Internet web browsing (HTTP/HTTPS)
+ permit tcp any any eq www
+ permit tcp any any eq 443
+ remark Permit external ICMP echo requests for connectivity checks
+ permit icmp any any echo
+ remark Permit established TCP return traffic
+ permit tcp any any established
+ remark Implicit deny all other unauthorized guest traffic
+ deny ip any any log
+exit
+
+! --- VLAN 50 Inbound ACL: Central Server Farm ---
+ip access-list extended ACL-SERVER-IN
+ remark Permit DNS server outbound root queries
+ permit udp host 172.16.7.4 any eq domain
+ permit tcp host 172.16.7.4 any eq domain
+ remark Permit DHCP server response offers and acknowledgments
+ permit udp host 172.16.7.4 any eq bootpc
+ remark Permit PACS archive replication to Remote Clinic Cache
+ permit tcp host 172.16.7.7 host 172.16.8.36 eq 443
+ remark Permit database synchronization to Backup Server
+ permit tcp host 172.16.7.4 host 172.16.7.8 eq 443
+ remark Permit established TCP return traffic to all hospital zones
+ permit tcp any any established
+ remark Permit ICMP diagnostic echo-reply and echo
+ permit icmp any any echo-reply
+ permit icmp any any echo
+ remark Implicit deny unsolicited outbound connections from servers
+ deny ip any any log
+exit
+
+! --- VLAN 60 Inbound ACL: VoIP Telephony ---
+ip access-list extended ACL-VOICE-IN
+ remark Permit DHCP requests with Option 150
+ permit udp any any eq bootps
+ remark Permit DNS queries for PBX hostname resolution
+ permit udp any host 172.16.7.4 eq domain
+ remark Permit TFTP firmware and config downloads from Central Server
+ permit udp any host 172.16.7.4 eq tftp
+ remark Permit SIP signaling between phones and call manager
+ permit udp any any eq 5060
+ permit tcp any any eq 5060
+ remark Permit RTP voice media streams (UDP port range 16384-32767)
+ permit udp any any range 16384 32767
+ remark Permit ICMP echo for phone health checks
+ permit icmp any any echo
+ remark Explicitly deny and log any voice packet targeting data VLANs
+ deny ip any 172.16.4.0 0.0.1.255 log
+ deny ip any 172.16.0.0 0.0.3.255 log
+ remark Implicit deny all other voice traffic
+ deny ip any any log
+exit
+
+! --- VLAN 99 Inbound ACL: Out-of-Band Management ---
+ip access-list extended ACL-MGMT-IN
+ remark Permit NOC administrator console full access
+ permit ip host 172.16.7.212 any
+ remark Permit Remote Clinic admin station access
+ permit ip host 172.16.8.75 any
+ remark Permit established TCP return management traffic
+ permit tcp any any established
+ remark Permit ICMP echo and echo-reply
+ permit icmp any any echo
+ permit icmp any any echo-reply
+ remark Explicitly deny and log all unapproved management access
+ deny ip any any log
+exit
+
 ! --- Inter-VLAN Routing: Switch Virtual Interfaces (SVIs) & HSRP v2 ---
 ! Group 1 (Odd VLANs: 10, 30, 50, 99): SW-D2 is STANDBY (Priority 100, Preempt)
 ! Group 2 (Even VLANs: 20, 40, 60): SW-D2 is ACTIVE (Priority 110, Preempt, Track Gi0/2 decr 20)
@@ -185,6 +370,7 @@ exit
 interface Vlan10
  description SVI_ICU_Clinical_Gateway
  ip address 172.16.7.131 255.255.255.192
+ ip access-group ACL-ICU-IN in
  ip helper-address 172.16.7.4
  standby version 2
  standby 10 ip 172.16.7.129
@@ -197,6 +383,7 @@ exit
 interface Vlan20
  description SVI_Surgery_Theatre_Gateway
  ip address 172.16.7.67 255.255.255.192
+ ip access-group ACL-SURGERY-IN in
  ip helper-address 172.16.7.4
  standby version 2
  standby 20 ip 172.16.7.65
@@ -210,6 +397,7 @@ exit
 interface Vlan30
  description SVI_Administration_Gateway
  ip address 172.16.4.3 255.255.254.0
+ ip access-group ACL-ADMIN-IN in
  ip helper-address 172.16.7.4
  standby version 2
  standby 30 ip 172.16.4.1
@@ -222,6 +410,7 @@ exit
 interface Vlan40
  description SVI_Guest_WiFi_Gateway
  ip address 172.16.0.3 255.255.252.0
+ ip access-group ACL-GUEST-IN in
  ip helper-address 172.16.7.4
  standby version 2
  standby 40 ip 172.16.0.1
@@ -235,6 +424,7 @@ exit
 interface Vlan50
  description SVI_Server_Farm_Gateway
  ip address 172.16.7.3 255.255.255.192
+ ip access-group ACL-SERVER-IN in
  standby version 2
  standby 50 ip 172.16.7.1
  standby 50 priority 100
@@ -246,6 +436,7 @@ exit
 interface Vlan60
  description SVI_VoIP_Voice_Gateway
  ip address 172.16.6.3 255.255.255.128
+ ip access-group ACL-VOICE-IN in
  ip helper-address 172.16.7.4
  standby version 2
  standby 60 ip 172.16.6.1
@@ -259,6 +450,7 @@ exit
 interface Vlan99
  description In_Band_Management_SVI_SW-D2
  ip address 172.16.7.195 255.255.255.224
+ ip access-group ACL-MGMT-IN in
  standby version 2
  standby 99 ip 172.16.7.193
  standby 99 priority 100
@@ -439,4 +631,65 @@ write memory
 !         SW-D2(config-if)# no shutdown
 ! Step 6: SW-D2 recovers priority 110, preempts SW-D1, and regains Active state:
 !         %STANDBY-6-STATECHANGE: Vlan20 Group 20 state Standby -> Active
+!
+! 11. Security ACL Verification Commands & Hit Counter Audit
+! ------------------------------------------------------------------------------
+! Step 1: Clear ACL hit counters before initiating validation tests:
+! SW-D2# clear access-list counters
+!
+! Step 2: Confirm inbound ACL bindings on SVIs:
+! SW-D2# show ip interface Vlan10 | include Inbound access list
+!   Inbound access list is ACL-ICU-IN
+! SW-D2# show ip interface Vlan20 | include Inbound access list
+!   Inbound access list is ACL-SURGERY-IN
+! SW-D2# show ip interface Vlan30 | include Inbound access list
+!   Inbound access list is ACL-ADMIN-IN
+! SW-D2# show ip interface Vlan40 | include Inbound access list
+!   Inbound access list is ACL-GUEST-IN
+! SW-D2# show ip interface Vlan50 | include Inbound access list
+!   Inbound access list is ACL-SERVER-IN
+! SW-D2# show ip interface Vlan60 | include Inbound access list
+!   Inbound access list is ACL-VOICE-IN
+! SW-D2# show ip interface Vlan99 | include Inbound access list
+!   Inbound access list is ACL-MGMT-IN
+!
+! Step 3: Inspect active access lists and packet match counters:
+! SW-D2# show access-lists
+! Extended IP access list ACL-ICU-IN
+!     10 permit udp any any eq bootps
+!     20 permit udp any host 172.16.7.4 eq domain
+!     30 permit tcp any host 172.16.7.4 eq domain
+!     40 permit tcp any host 172.16.7.4 eq www
+!     50 permit tcp any host 172.16.7.4 eq 443
+!     60 permit tcp any host 172.16.7.7 eq 104
+!     70 permit tcp any host 172.16.7.7 eq www
+!     80 permit tcp any host 172.16.7.7 eq 443
+!     90 permit tcp any host 172.16.7.8 eq 443
+!     100 permit tcp any host 172.16.8.36 eq www
+!     110 permit tcp any host 172.16.8.36 eq 443
+!     120 permit tcp any any established
+!     130 permit icmp any any echo
+!     140 permit icmp any any echo-reply
+!     150 deny ip any 172.16.4.0 0.0.1.255 log
+!     160 deny ip any 172.16.0.0 0.0.3.255 log
+!     170 deny ip any any log
+! Extended IP access list ACL-SURGERY-IN
+!     10 permit udp any any eq bootps
+!     20 permit udp any host 172.16.7.4 eq domain
+!     30 permit tcp any host 172.16.7.4 eq domain
+!     40 permit tcp any host 172.16.7.4 eq www (15 matches)
+!     50 permit tcp any host 172.16.7.4 eq 443
+!     60 permit tcp any host 172.16.7.7 eq 104 (45 matches)
+!     70 permit tcp any host 172.16.7.7 eq www
+!     80 permit tcp any host 172.16.7.7 eq 443 (20 matches)
+!     90 permit tcp any any established (80 matches)
+!     100 permit icmp any any echo
+!     110 permit icmp any any echo-reply
+!     120 deny ip any 172.16.4.0 0.0.1.255 log
+!     130 deny ip any 172.16.0.0 0.0.3.255 log
+!     140 deny ip any any log
+! Standard IP access list ACL-VTY-SSH
+!     10 permit 172.16.7.212
+!     20 permit 172.16.8.75
+!     30 deny any log
 ! ==============================================================================

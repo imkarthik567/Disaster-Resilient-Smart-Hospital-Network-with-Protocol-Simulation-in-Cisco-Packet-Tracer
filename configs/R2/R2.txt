@@ -7,6 +7,7 @@
 ! WAN BACKUP:   Serial0/0/1 (DTE) -> R1 Se0/0/1 [EIGRP AS 100 Standby, AD adjusted to 120]
 ! LAN LINK:     GigabitEthernet0/0 -> SW-D3 Gi0/1 (172.16.8.96/30) [OSPF Area 1]
 ! ROLE:         OSPF Area Border Router (ABR) connecting Area 0 and Area 1
+! SECURITY:     ACL-VTY-SSH (NOC & Local Admin SSH Isolation)
 ! LOOPBACK0:    172.16.8.105/32 (OSPF Router ID & Management)
 ! ==============================================================================
 
@@ -21,8 +22,19 @@ banner motd ^C
 ====================================================================
   R2: Remote Clinic Core Router (ABR) - VIT SCOPE CN Project
   OSPF Area Border Router (Area 0 <-> Area 1) with EIGRP Backup
+  Infrastructure Hardening with Strict VTY SSH Whitelisting
 ====================================================================
 ^C
+
+! --- Infrastructure Hardening: Standard ACL for VTY Management ---
+ip access-list standard ACL-VTY-SSH
+ remark Permit Central Hospital NOC Management Console
+ permit host 172.16.7.212
+ remark Permit Remote Clinic Local Management Station
+ permit host 172.16.8.75
+ remark Deny all other administrative attempts with logging
+ deny any log
+exit
 
 ! --- Management Credentials & Line Security ---
 enable secret class
@@ -36,7 +48,8 @@ exit
 line vty 0 4
  password cisco
  login
- transport input ssh telnet
+ transport input ssh
+ access-class ACL-VTY-SSH in
  exec-timeout 15 0
 exit
 
@@ -154,58 +167,54 @@ write memory
 ! VERIFICATION COMMANDS & EXPECTED OUTPUT
 ! ==============================================================================
 !
-! 1. Verify OSPF ABR Operation:
+! 1. Clear Access-List Counters Before Testing:
+!    R2# clear access-list counters
+!    Clear "access-list counters" to [confirm]
+!
+! 2. Verify VTY SSH Management Access-Class:
+!    R2# show access-lists ACL-VTY-SSH
+!    EXPECTED OUTPUT:
+!    Standard IP access list ACL-VTY-SSH
+!        10 permit host 172.16.7.212 (2 matches)
+!        20 permit host 172.16.8.75
+!        30 deny any log
+!
+! 3. Verify OSPF ABR Operation:
 !    R2# show ip ospf
 !    EXPECTED OUTPUT:
 !    It is an area border router
 !    Number of areas in this router is 2 (Area 0, Area 1)
 !
-! 2. Verify OSPF Neighbors on Both Sides:
+! 4. Verify OSPF Neighbors on Both Sides:
 !    R2# show ip ospf neighbor
 !    EXPECTED OUTPUT:
 !    Neighbor ID     Pri   State           Dead Time   Address         Interface
 !    172.16.8.104      0   FULL/  -        00:00:03    172.16.8.81     Serial0/0/0 (Area 0 to R1)
 !    172.16.8.108      0   FULL/  -        00:00:35    172.16.8.97     GigabitEthernet0/0 (Area 1 to SW-D3)
-!    (Notice: Point-to-point network type on both interfaces eliminates DR/BDR)
 !
-! 3. Verify Standby EIGRP Neighbor:
+! 5. Verify Standby EIGRP Neighbor:
 !    R2# show ip eigrp neighbors
 !    EXPECTED OUTPUT:
 !    H   Address          Interface       Hold  Uptime    SRTT   RTO   Q   Seq
 !    0   172.16.8.85      Se0/0/1           13  00:10:48   25    200   0   15
 !
-! 4. Verify Active Routes to Main Hospital (Normal State - Primary Link UP):
+! 6. Verify Active Routes to Main Hospital (Normal State - Primary Link UP):
 !    R2# show ip route
 !    EXPECTED OUTPUT:
 !    Gateway of last resort is 172.16.8.81 to network 0.0.0.0
-!    O*E2 0.0.0.0/0 [110/20] via 172.16.8.81, Serial0/0/0 (Default Route from R1)
-!         172.16.0.0/16 is variably subnetted, 17 subnets, 6 masks
-!    O    172.16.0.0/22 [110/50] via 172.16.8.81, Serial0/0/0 (Main Guest Wi-Fi)
-!    O    172.16.4.0/23 [110/50] via 172.16.8.81, Serial0/0/0 (Main Admin)
-!    O    172.16.6.0/25 [110/50] via 172.16.8.81, Serial0/0/0 (Main VoIP)
-!    O    172.16.7.0/26 [110/50] via 172.16.8.81, Serial0/0/0 (Main Server Farm)
-!    O    172.16.7.64/26 [110/50] via 172.16.8.81, Serial0/0/0 (Main Surgery)
-!    O    172.16.7.128/26 [110/50] via 172.16.8.81, Serial0/0/0 (Main ICU)
-!    O    172.16.7.192/27 [110/50] via 172.16.8.81, Serial0/0/0 (Main Management)
-!    O    172.16.6.128/25 [110/2] via 172.16.8.97, GigabitEthernet0/0 (Clinic Guest)
-!    O    172.16.7.224/27 [110/2] via 172.16.8.97, GigabitEthernet0/0 (Clinic Voice)
-!    O    172.16.8.0/27 [110/2] via 172.16.8.97, GigabitEthernet0/0 (Clinic Admin)
-!    O    172.16.8.32/27 [110/2] via 172.16.8.97, GigabitEthernet0/0 (Clinic Clinical)
-!    O    172.16.8.64/28 [110/2] via 172.16.8.97, GigabitEthernet0/0 (Clinic Mgmt)
-!    (Notice: All Main Hospital subnets are learned via OSPF Se0/0/0, NOT EIGRP)
+!    O*E2 0.0.0.0/0 [110/20] via 172.16.8.81, Serial0/0/0
 !
-! 5. Test Failover Reconvergence (Simulating Primary WAN Link Failure):
+! 7. Test Failover Reconvergence (Simulating Primary WAN Link Failure):
 !    R2(config)# interface Serial0/0/0
 !    R2(config-if)# shutdown
-!    Wait ~4 seconds for OSPF dead-interval expiry, then check routing table:
 !    R2# show ip route
 !    EXPECTED OUTPUT:
-!    D    172.16.0.0/16 [120/2172416] via 172.16.8.85, Serial0/0/1  <-- EIGRP TAKES OVER!
+!    D    172.16.0.0/16 [120/2172416] via 172.16.8.85, Serial0/0/1
 !
-! 6. Restore Primary Link:
+! 8. Restore Primary Link:
 !    R2(config)# interface Serial0/0/0
 !    R2(config-if)# no shutdown
 !    R2# show ip route
 !    EXPECTED OUTPUT:
-!    O    172.16.7.0/26 [110/50] via 172.16.8.81, Serial0/0/0  <-- OSPF RESTORED!
+!    O    172.16.7.0/26 [110/50] via 172.16.8.81, Serial0/0/0
 ! ==============================================================================
