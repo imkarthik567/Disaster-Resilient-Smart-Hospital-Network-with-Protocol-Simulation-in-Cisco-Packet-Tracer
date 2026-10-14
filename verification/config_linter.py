@@ -84,7 +84,7 @@ def run_linter():
 
     for root, dirs, files in os.walk(CONFIGS_DIR):
         for f in files:
-            if f.endswith(".txt") or f.endswith(".ios"):
+            if f.endswith(".txt") or f.endswith(".ios") or f.endswith(".cfg"):
                 total_files += 1
                 filepath = os.path.join(root, f)
                 dev_name, filename, passes, failures = lint_file(filepath)
