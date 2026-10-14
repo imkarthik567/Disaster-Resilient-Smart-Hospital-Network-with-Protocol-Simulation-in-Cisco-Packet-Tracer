@@ -1,0 +1,476 @@
+# ==============================================================================
+# Expected Routing Tables per Device (Golden Baseline)
+# Disaster-Resilient Smart Hospital Network (VIT Vellore)
+# Cisco Packet Tracer 8.x Verification Baseline
+# ==============================================================================
+
+devices:
+  R1:
+    description: "Main Hospital Core Router (Normal State - Primary Link UP)"
+    routes:
+      - network: 0.0.0.0/0
+        protocol: S*
+        next_hop: 172.16.8.101
+        interface: GigabitEthernet0/2
+        description: "Default route to EDGE-ISP gateway"
+      - network: 172.16.0.0/22
+        protocol: O
+        next_hops: [172.16.8.89, 172.16.8.93]
+        description: "Hospital Guest Wi-Fi (ECMP via SW-D1 & SW-D2)"
+      - network: 172.16.4.0/23
+        protocol: O
+        next_hops: [172.16.8.89, 172.16.8.93]
+        description: "Hospital Administration (ECMP via SW-D1 & SW-D2)"
+      - network: 172.16.6.0/25
+        protocol: O
+        next_hops: [172.16.8.89, 172.16.8.93]
+        description: "Hospital VoIP Voice (ECMP via SW-D1 & SW-D2)"
+      - network: 172.16.6.128/25
+        protocol: O IA
+        next_hop: 172.16.8.82
+        interface: Serial0/0/0
+        description: "Clinic Guest Wi-Fi Summary via ABR R2"
+      - network: 172.16.7.0/26
+        protocol: O
+        next_hops: [172.16.8.89, 172.16.8.93]
+        description: "Central Server Farm (ECMP via SW-D1 & SW-D2)"
+      - network: 172.16.7.64/26
+        protocol: O
+        next_hops: [172.16.8.89, 172.16.8.93]
+        description: "Surgery Operating Theatres (ECMP via SW-D1 & SW-D2)"
+      - network: 172.16.7.128/26
+        protocol: O
+        next_hops: [172.16.8.89, 172.16.8.93]
+        description: "ICU Clinical Wards (ECMP via SW-D1 & SW-D2)"
+      - network: 172.16.7.192/27
+        protocol: O
+        next_hops: [172.16.8.89, 172.16.8.93]
+        description: "Hospital In-Band Management (ECMP via SW-D1 & SW-D2)"
+      - network: 172.16.7.224/27
+        protocol: O IA
+        next_hop: 172.16.8.82
+        interface: Serial0/0/0
+        description: "Clinic VoIP Voice Summary via ABR R2"
+      - network: 172.16.8.0/24
+        protocol: O IA
+        next_hop: 172.16.8.82
+        interface: Serial0/0/0
+        description: "Clinic Campus Summary via ABR R2"
+      - network: 172.16.8.80/30
+        protocol: C
+        interface: Serial0/0/0
+        description: "Primary WAN Serial Link"
+      - network: 172.16.8.81/32
+        protocol: L
+        interface: Serial0/0/0
+        description: "R1 Primary WAN Local IP"
+      - network: 172.16.8.84/30
+        protocol: C
+        interface: Serial0/0/1
+        description: "Secondary WAN Serial Link"
+      - network: 172.16.8.85/32
+        protocol: L
+        interface: Serial0/0/1
+        description: "R1 Secondary WAN Local IP"
+      - network: 172.16.8.88/30
+        protocol: C
+        interface: GigabitEthernet0/0
+        description: "Routed Uplink to SW-D1"
+      - network: 172.16.8.90/32
+        protocol: L
+        interface: GigabitEthernet0/0
+        description: "R1 Gi0/0 Local IP"
+      - network: 172.16.8.92/30
+        protocol: C
+        interface: GigabitEthernet0/1
+        description: "Routed Uplink to SW-D2"
+      - network: 172.16.8.94/32
+        protocol: L
+        interface: GigabitEthernet0/1
+        description: "R1 Gi0/1 Local IP"
+      - network: 172.16.8.100/30
+        protocol: C
+        interface: GigabitEthernet0/2
+        description: "Internet Edge Link to ISP"
+      - network: 172.16.8.102/32
+        protocol: L
+        interface: GigabitEthernet0/2
+        description: "R1 Gi0/2 Local IP"
+      - network: 172.16.8.104/32
+        protocol: C
+        interface: Loopback0
+        description: "R1 Loopback0 Router-ID"
+
+  R1_failover:
+    description: "Main Hospital Core Router (Failed State - Primary Se0/0/0 DOWN, EIGRP Active)"
+    routes:
+      - network: 0.0.0.0/0
+        protocol: S*
+        next_hop: 172.16.8.101
+        interface: GigabitEthernet0/2
+      - network: 172.16.0.0/22
+        protocol: O
+        next_hops: [172.16.8.89, 172.16.8.93]
+      - network: 172.16.4.0/23
+        protocol: O
+        next_hops: [172.16.8.89, 172.16.8.93]
+      - network: 172.16.6.0/25
+        protocol: O
+        next_hops: [172.16.8.89, 172.16.8.93]
+      - network: 172.16.6.128/25
+        protocol: D
+        next_hop: 172.16.8.86
+        interface: Serial0/0/1
+        description: "Clinic Guest Wi-Fi via EIGRP Failover"
+      - network: 172.16.7.0/26
+        protocol: O
+        next_hops: [172.16.8.89, 172.16.8.93]
+      - network: 172.16.7.64/26
+        protocol: O
+        next_hops: [172.16.8.89, 172.16.8.93]
+      - network: 172.16.7.128/26
+        protocol: O
+        next_hops: [172.16.8.89, 172.16.8.93]
+      - network: 172.16.7.192/27
+        protocol: O
+        next_hops: [172.16.8.89, 172.16.8.93]
+      - network: 172.16.7.224/27
+        protocol: D
+        next_hop: 172.16.8.86
+        interface: Serial0/0/1
+        description: "Clinic Voice via EIGRP Failover"
+      - network: 172.16.8.0/24
+        protocol: D
+        next_hop: 172.16.8.86
+        interface: Serial0/0/1
+        description: "Clinic Campus via EIGRP Failover"
+      - network: 172.16.8.84/30
+        protocol: C
+        interface: Serial0/0/1
+      - network: 172.16.8.85/32
+        protocol: L
+        interface: Serial0/0/1
+      - network: 172.16.8.88/30
+        protocol: C
+        interface: GigabitEthernet0/0
+      - network: 172.16.8.90/32
+        protocol: L
+        interface: GigabitEthernet0/0
+      - network: 172.16.8.92/30
+        protocol: C
+        interface: GigabitEthernet0/1
+      - network: 172.16.8.94/32
+        protocol: L
+        interface: GigabitEthernet0/1
+      - network: 172.16.8.100/30
+        protocol: C
+        interface: GigabitEthernet0/2
+      - network: 172.16.8.102/32
+        protocol: L
+        interface: GigabitEthernet0/2
+      - network: 172.16.8.104/32
+        protocol: C
+        interface: Loopback0
+
+  R2:
+    description: "Remote Clinic Core Router / ABR (Normal State - Primary Link UP)"
+    routes:
+      - network: 0.0.0.0/0
+        protocol: O*E2
+        next_hop: 172.16.8.81
+        interface: Serial0/0/0
+        description: "Default route from R1 via OSPF"
+      - network: 172.16.0.0/22
+        protocol: O
+        next_hop: 172.16.8.81
+        interface: Serial0/0/0
+      - network: 172.16.4.0/23
+        protocol: O
+        next_hop: 172.16.8.81
+        interface: Serial0/0/0
+      - network: 172.16.6.0/25
+        protocol: O
+        next_hop: 172.16.8.81
+        interface: Serial0/0/0
+      - network: 172.16.6.128/25
+        protocol: O
+        next_hop: 172.16.8.97
+        interface: GigabitEthernet0/0
+      - network: 172.16.7.0/26
+        protocol: O
+        next_hop: 172.16.8.81
+        interface: Serial0/0/0
+      - network: 172.16.7.64/26
+        protocol: O
+        next_hop: 172.16.8.81
+        interface: Serial0/0/0
+      - network: 172.16.7.128/26
+        protocol: O
+        next_hop: 172.16.8.81
+        interface: Serial0/0/0
+      - network: 172.16.7.192/27
+        protocol: O
+        next_hop: 172.16.8.81
+        interface: Serial0/0/0
+      - network: 172.16.7.224/27
+        protocol: O
+        next_hop: 172.16.8.97
+        interface: GigabitEthernet0/0
+      - network: 172.16.8.0/27
+        protocol: O
+        next_hop: 172.16.8.97
+        interface: GigabitEthernet0/0
+      - network: 172.16.8.32/27
+        protocol: O
+        next_hop: 172.16.8.97
+        interface: GigabitEthernet0/0
+      - network: 172.16.8.64/28
+        protocol: O
+        next_hop: 172.16.8.97
+        interface: GigabitEthernet0/0
+      - network: 172.16.8.80/30
+        protocol: C
+        interface: Serial0/0/0
+      - network: 172.16.8.82/32
+        protocol: L
+        interface: Serial0/0/0
+      - network: 172.16.8.84/30
+        protocol: C
+        interface: Serial0/0/1
+      - network: 172.16.8.86/32
+        protocol: L
+        interface: Serial0/0/1
+      - network: 172.16.8.96/30
+        protocol: C
+        interface: GigabitEthernet0/0
+      - network: 172.16.8.98/32
+        protocol: L
+        interface: GigabitEthernet0/0
+      - network: 172.16.8.105/32
+        protocol: C
+        interface: Loopback0
+
+  SW-D1:
+    description: "Main Hospital Distribution Switch SW-D1 (Normal State)"
+    routes:
+      - network: 0.0.0.0/0
+        protocol: O*E2
+        next_hop: 172.16.8.90
+        interface: GigabitEthernet0/2
+      - network: 172.16.0.0/22
+        protocol: C
+        interface: Vlan40
+      - network: 172.16.0.2/32
+        protocol: L
+        interface: Vlan40
+      - network: 172.16.4.0/23
+        protocol: C
+        interface: Vlan30
+      - network: 172.16.4.2/32
+        protocol: L
+        interface: Vlan30
+      - network: 172.16.6.0/25
+        protocol: C
+        interface: Vlan60
+      - network: 172.16.6.2/32
+        protocol: L
+        interface: Vlan60
+      - network: 172.16.6.128/25
+        protocol: O IA
+        next_hop: 172.16.8.90
+        interface: GigabitEthernet0/2
+      - network: 172.16.7.0/26
+        protocol: C
+        interface: Vlan50
+      - network: 172.16.7.2/32
+        protocol: L
+        interface: Vlan50
+      - network: 172.16.7.64/26
+        protocol: C
+        interface: Vlan20
+      - network: 172.16.7.66/32
+        protocol: L
+        interface: Vlan20
+      - network: 172.16.7.128/26
+        protocol: C
+        interface: Vlan10
+      - network: 172.16.7.130/32
+        protocol: L
+        interface: Vlan10
+      - network: 172.16.7.192/27
+        protocol: C
+        interface: Vlan99
+      - network: 172.16.7.194/32
+        protocol: L
+        interface: Vlan99
+      - network: 172.16.7.224/27
+        protocol: O IA
+        next_hop: 172.16.8.90
+        interface: GigabitEthernet0/2
+      - network: 172.16.8.0/24
+        protocol: O IA
+        next_hop: 172.16.8.90
+        interface: GigabitEthernet0/2
+      - network: 172.16.8.88/30
+        protocol: C
+        interface: GigabitEthernet0/2
+      - network: 172.16.8.89/32
+        protocol: L
+        interface: GigabitEthernet0/2
+      - network: 172.16.8.92/30
+        protocol: O
+        next_hop: 172.16.8.90
+        interface: GigabitEthernet0/2
+      - network: 172.16.8.106/32
+        protocol: C
+        interface: Loopback0
+
+  SW-D2:
+    description: "Main Hospital Distribution Switch SW-D2 (Normal State)"
+    routes:
+      - network: 0.0.0.0/0
+        protocol: O*E2
+        next_hop: 172.16.8.94
+        interface: GigabitEthernet0/2
+      - network: 172.16.0.0/22
+        protocol: C
+        interface: Vlan40
+      - network: 172.16.0.3/32
+        protocol: L
+        interface: Vlan40
+      - network: 172.16.4.0/23
+        protocol: C
+        interface: Vlan30
+      - network: 172.16.4.3/32
+        protocol: L
+        interface: Vlan30
+      - network: 172.16.6.0/25
+        protocol: C
+        interface: Vlan60
+      - network: 172.16.6.3/32
+        protocol: L
+        interface: Vlan60
+      - network: 172.16.6.128/25
+        protocol: O IA
+        next_hop: 172.16.8.94
+        interface: GigabitEthernet0/2
+      - network: 172.16.7.0/26
+        protocol: C
+        interface: Vlan50
+      - network: 172.16.7.3/32
+        protocol: L
+        interface: Vlan50
+      - network: 172.16.7.64/26
+        protocol: C
+        interface: Vlan20
+      - network: 172.16.7.67/32
+        protocol: L
+        interface: Vlan20
+      - network: 172.16.7.128/26
+        protocol: C
+        interface: Vlan10
+      - network: 172.16.7.131/32
+        protocol: L
+        interface: Vlan10
+      - network: 172.16.7.192/27
+        protocol: C
+        interface: Vlan99
+      - network: 172.16.7.195/32
+        protocol: L
+        interface: Vlan99
+      - network: 172.16.7.224/27
+        protocol: O IA
+        next_hop: 172.16.8.94
+        interface: GigabitEthernet0/2
+      - network: 172.16.8.0/24
+        protocol: O IA
+        next_hop: 172.16.8.94
+        interface: GigabitEthernet0/2
+      - network: 172.16.8.88/30
+        protocol: O
+        next_hop: 172.16.8.94
+        interface: GigabitEthernet0/2
+      - network: 172.16.8.92/30
+        protocol: C
+        interface: GigabitEthernet0/2
+      - network: 172.16.8.93/32
+        protocol: L
+        interface: GigabitEthernet0/2
+      - network: 172.16.8.107/32
+        protocol: C
+        interface: Loopback0
+
+  SW-D3:
+    description: "Remote Spoke Clinic Distribution Switch SW-D3 (Normal State)"
+    routes:
+      - network: 0.0.0.0/0
+        protocol: O*E2
+        next_hop: 172.16.8.98
+        interface: GigabitEthernet0/1
+      - network: 172.16.0.0/22
+        protocol: O IA
+        next_hop: 172.16.8.98
+        interface: GigabitEthernet0/1
+      - network: 172.16.4.0/23
+        protocol: O IA
+        next_hop: 172.16.8.98
+        interface: GigabitEthernet0/1
+      - network: 172.16.6.0/25
+        protocol: O IA
+        next_hop: 172.16.8.98
+        interface: GigabitEthernet0/1
+      - network: 172.16.6.128/25
+        protocol: C
+        interface: Vlan40
+      - network: 172.16.6.129/32
+        protocol: L
+        interface: Vlan40
+      - network: 172.16.7.0/26
+        protocol: O IA
+        next_hop: 172.16.8.98
+        interface: GigabitEthernet0/1
+      - network: 172.16.7.64/26
+        protocol: O IA
+        next_hop: 172.16.8.98
+        interface: GigabitEthernet0/1
+      - network: 172.16.7.128/26
+        protocol: O IA
+        next_hop: 172.16.8.98
+        interface: GigabitEthernet0/1
+      - network: 172.16.7.192/27
+        protocol: O IA
+        next_hop: 172.16.8.98
+        interface: GigabitEthernet0/1
+      - network: 172.16.7.224/27
+        protocol: C
+        interface: Vlan60
+      - network: 172.16.7.225/32
+        protocol: L
+        interface: Vlan60
+      - network: 172.16.8.0/27
+        protocol: C
+        interface: Vlan30
+      - network: 172.16.8.1/32
+        protocol: L
+        interface: Vlan30
+      - network: 172.16.8.32/27
+        protocol: C
+        interface: Vlan10
+      - network: 172.16.8.33/32
+        protocol: L
+        interface: Vlan10
+      - network: 172.16.8.64/28
+        protocol: C
+        interface: Vlan99
+      - network: 172.16.8.65/32
+        protocol: L
+        interface: Vlan99
+      - network: 172.16.8.96/30
+        protocol: C
+        interface: GigabitEthernet0/1
+      - network: 172.16.8.97/32
+        protocol: L
+        interface: GigabitEthernet0/1
+      - network: 172.16.8.108/32
+        protocol: C
+        interface: Loopback0

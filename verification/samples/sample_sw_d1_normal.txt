@@ -1,0 +1,26 @@
+SW-D1# show ip route
+Gateway of last resort is 172.16.8.90 to network 0.0.0.0
+
+O*E2 0.0.0.0/0 [110/20] via 172.16.8.90, 00:15:45, GigabitEthernet0/2
+     172.16.0.0/16 is variably subnetted, 18 subnets, 6 masks
+C       172.16.0.0/22 is directly connected, Vlan40
+L       172.16.0.2/32 is directly connected, Vlan40
+C       172.16.4.0/23 is directly connected, Vlan30
+L       172.16.4.2/32 is directly connected, Vlan30
+C       172.16.6.0/25 is directly connected, Vlan60
+L       172.16.6.2/32 is directly connected, Vlan60
+O IA    172.16.6.128/25 [110/50] via 172.16.8.90, 00:14:22, GigabitEthernet0/2
+C       172.16.7.0/26 is directly connected, Vlan50
+L       172.16.7.2/32 is directly connected, Vlan50
+C       172.16.7.64/26 is directly connected, Vlan20
+L       172.16.7.66/32 is directly connected, Vlan20
+C       172.16.7.128/26 is directly connected, Vlan10
+L       172.16.7.130/32 is directly connected, Vlan10
+C       172.16.7.192/27 is directly connected, Vlan99
+L       172.16.7.194/32 is directly connected, Vlan99
+O IA    172.16.7.224/27 [110/50] via 172.16.8.90, 00:14:22, GigabitEthernet0/2
+O IA    172.16.8.0/24 [110/50] via 172.16.8.90, 00:14:22, GigabitEthernet0/2
+C       172.16.8.88/30 is directly connected, GigabitEthernet0/2
+L       172.16.8.89/32 is directly connected, GigabitEthernet0/2
+O       172.16.8.92/30 [110/2] via 172.16.8.90, 00:15:45, GigabitEthernet0/2
+C       172.16.8.106/32 is directly connected, Loopback0

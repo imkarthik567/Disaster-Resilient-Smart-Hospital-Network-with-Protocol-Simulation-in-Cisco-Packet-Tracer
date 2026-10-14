@@ -42,7 +42,8 @@ def task_test():
     ok5 = run_command(["tests/test_server_setup.py"], "Executing Server Farm, DHCP & DNS Services Tests")
     ok6 = run_command(["tests/test_routing_design.py"], "Executing Dynamic Routing Design & Model Tests")
     ok7 = run_command(["tests/test_routing_configs.py"], "Executing Dynamic Routing Configurations & Expected State Tests")
-    return ok1 and ok2 and ok3 and ok4 and ok5 and ok6 and ok7
+    ok8 = run_command(["tests/test_route_checker.py"], "Executing Cisco IOS Route Checker Tool Tests")
+    return ok1 and ok2 and ok3 and ok4 and ok5 and ok6 and ok7 and ok8
 
 def task_lint():
     ok1 = run_command(["verification/check_topology.py"], "Validating Topology & Interconnect Cable Matrix")
