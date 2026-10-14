@@ -52,7 +52,12 @@ def task_test():
     ok15 = run_command(["tests/test_arq_protocols.py"], "Executing Sliding-Window ARQ Protocol & Adapter Tests")
     ok16 = run_command(["tests/test_medical_sensor_app.py"], "Executing Clinical Sensor Application & Gateway Tests")
     ok17 = run_command(["tests/test_benchmark_sweep.py"], "Executing ARQ Simulation Sweep & Statistics Tests")
-    return ok1 and ok2 and ok3 and ok4 and ok5 and ok6 and ok7 and ok8 and ok9 and ok10 and ok11 and ok12 and ok13 and ok14 and ok15 and ok16 and ok17
+    ok18 = run_command(["tests/test_analysis_charts.py"], "Executing Protocol Analysis Charts & Findings Tests")
+    return (
+        ok1 and ok2 and ok3 and ok4 and ok5 and ok6 and ok7 and ok8 and
+        ok9 and ok10 and ok11 and ok12 and ok13 and ok14 and ok15 and ok16 and
+        ok17 and ok18
+    )
 
 def task_lint():
     ok1 = run_command(["verification/check_topology.py"], "Validating Topology & Interconnect Cable Matrix")
@@ -60,10 +65,10 @@ def task_lint():
     return ok1 and ok2
 
 def task_bench():
-    return run_command(["sim/benchmark_harness.py"], "Running Protocol Benchmark Sweep Harness")
+    return run_command(["sim/run_benchmarks.py"], "Running Protocol Benchmark Sweep Harness")
 
 def task_charts():
-    return run_command(["sim/benchmark_harness.py"], "Generating Comparative Protocol Charts")
+    return run_command(["sim/analysis.py"], "Generating Publication-Quality Protocol & Error Detection Charts")
 
 def task_docs():
     ok1 = task_addressing()
