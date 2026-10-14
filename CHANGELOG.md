@@ -7,6 +7,20 @@ and this project adheres to Semantic Versioning.
 
 ---
 
+## [1.4.0] - 2026-10-14
+
+### Added
+- **Phase 4.1: Dynamic Routing Architecture & Convergence Protocol Design:**
+  - Formulated authoritative routing design reference document in [`docs/routing_design.md`](docs/routing_design.md).
+  - Solved OSPF area boundary challenge by extending Backbone Area 0 across the primary serial WAN link (`172.16.8.80/30`) and designating Core Router `R2` as the Area Border Router (ABR), strictly isolating remote clinic Link-State Database (LSDB) churn from the hospital campus core.
+  - Specified ABR route summarisation (`area 1 range`) on `R2` compressing 6 clinic subnets down to 3 summary LSAs (50.0% LSDB reduction).
+  - Resolved Administrative Distance contention between OSPF ($AD=110$) and EIGRP ($AD=90$) by tuning EIGRP internal AD to 120 (`distance eigrp 120 170`), ensuring deterministic OSPF primary path selection and automated sub-second EIGRP failover.
+  - Engineered loop-prevention architecture for two-point mutual redistribution utilizing symmetrical 4-way Route Tagging (`tag 110` for OSPF origin, `tag 200` for EIGRP origin) and route-map deny filters.
+  - Audited fast convergence tuning against Cisco Packet Tracer 8.x boundaries: documented support for Fast Hello/Dead timers (1s/4s), Point-to-Point network types, and Passive-Interface Default, while explicitly noting lack of support for `timers throttle spf` and BFD.
+  - Specified dynamic Type-5 default route injection toward the ISP (`default-information originate`) with floating static backup routes ($AD=200$).
+  - Defined MD5 cryptographic authentication for OSPF (`Serial0/0/0`) and EIGRP (`Serial0/0/1`).
+  - Created simulation model in [`sim/routing_model.py`](sim/routing_model.py) and unit test suite [`tests/test_routing_design.py`](tests/test_routing_design.py) integrated into `tasks.py test`.
+
 ## [1.3.0] - 2026-10-14
 
 ### Added
