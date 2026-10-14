@@ -25,15 +25,17 @@ addressing:
 
 lint:
 	$(PYTHON) verification/config_linter.py
+	$(PYTHON) verification/lint_configs.py
 
 bench:
-	$(PYTHON) sim/benchmark_harness.py
+	$(PYTHON) sim/run_benchmarks.py
 
 charts:
-	$(PYTHON) sim/benchmark_harness.py
+	$(PYTHON) sim/analysis.py
 
 docs: addressing
-	$(PYTHON) topology/pt_builder.py
+	$(PYTHON) topology/generate_ptbuilder.py
+	$(PYTHON) verification/generate_test_matrix.py
 
 test:
-	$(PYTHON) -m pytest sim/test_protocols.py
+	$(PYTHON) tasks.py test

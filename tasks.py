@@ -54,16 +54,18 @@ def task_test():
     ok17 = run_command(["tests/test_benchmark_sweep.py"], "Executing ARQ Simulation Sweep & Statistics Tests")
     ok18 = run_command(["tests/test_analysis_charts.py"], "Executing Protocol Analysis Charts & Findings Tests")
     ok19 = run_command(["tests/test_test_matrix.py"], "Executing Master Verification Test Matrix Tests")
+    ok20 = run_command(["tests/test_lint_configs.py"], "Executing Cisco IOS Config Linter & Show Parser Tests")
     return (
         ok1 and ok2 and ok3 and ok4 and ok5 and ok6 and ok7 and ok8 and
         ok9 and ok10 and ok11 and ok12 and ok13 and ok14 and ok15 and ok16 and
-        ok17 and ok18 and ok19
+        ok17 and ok18 and ok19 and ok20
     )
 
 def task_lint():
     ok1 = run_command(["verification/check_topology.py"], "Validating Topology & Interconnect Cable Matrix")
-    ok2 = run_command(["verification/config_linter.py"], "Auditing Device Configurations via Linter")
-    return ok1 and ok2
+    ok2 = run_command(["verification/config_linter.py"], "Auditing Device Configurations via Basic Linter")
+    ok3 = run_command(["verification/lint_configs.py"], "Auditing Configurations via CiscoConfParse Policy Auditor")
+    return ok1 and ok2 and ok3
 
 def task_bench():
     return run_command(["sim/run_benchmarks.py"], "Running Protocol Benchmark Sweep Harness")
