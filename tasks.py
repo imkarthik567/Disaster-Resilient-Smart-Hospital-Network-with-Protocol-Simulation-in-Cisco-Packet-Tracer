@@ -55,10 +55,11 @@ def task_test():
     ok18 = run_command(["tests/test_analysis_charts.py"], "Executing Protocol Analysis Charts & Findings Tests")
     ok19 = run_command(["tests/test_test_matrix.py"], "Executing Master Verification Test Matrix Tests")
     ok20 = run_command(["tests/test_lint_configs.py"], "Executing Cisco IOS Config Linter & Show Parser Tests")
+    ok21 = run_command(["tests/test_convergence_analysis.py"], "Executing Failover Convergence Analysis & SLA Tests")
     return (
         ok1 and ok2 and ok3 and ok4 and ok5 and ok6 and ok7 and ok8 and
         ok9 and ok10 and ok11 and ok12 and ok13 and ok14 and ok15 and ok16 and
-        ok17 and ok18 and ok19 and ok20
+        ok17 and ok18 and ok19 and ok20 and ok21
     )
 
 def task_lint():
@@ -71,7 +72,9 @@ def task_bench():
     return run_command(["sim/run_benchmarks.py"], "Running Protocol Benchmark Sweep Harness")
 
 def task_charts():
-    return run_command(["sim/analysis.py"], "Generating Publication-Quality Protocol & Error Detection Charts")
+    ok1 = run_command(["sim/analysis.py"], "Generating Publication-Quality Protocol & Error Detection Charts")
+    ok2 = run_command(["sim/convergence_analysis.py"], "Generating High-Availability Failover Convergence Charts & Findings")
+    return ok1 and ok2
 
 def task_docs():
     ok1 = task_addressing()

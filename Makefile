@@ -32,6 +32,7 @@ bench:
 
 charts:
 	$(PYTHON) sim/analysis.py
+	$(PYTHON) sim/convergence_analysis.py
 
 docs: addressing
 	$(PYTHON) topology/generate_ptbuilder.py
