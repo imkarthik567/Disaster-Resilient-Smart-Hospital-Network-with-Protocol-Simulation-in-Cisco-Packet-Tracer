@@ -1,37 +1,53 @@
 ! ==============================================================================
-! DEVICE:       SW-D3 (Remote Clinic - Distribution Switch)
+! DEVICE:       SW-D3
 ! MODEL:        Cisco Catalyst 3560-24PS (Multilayer Layer-3 Switch)
-! LAYER:        Distribution Layer (Remote Clinic Campus)
-! UPLINK:       GigabitEthernet0/1 -> R2 GigabitEthernet0/0 (Routed Link /30)
-! DOWNLINK:     FastEthernet0/1 -> SW-A5 (802.1Q Trunk)
-! ROUTING:      OSPF Process 1 (Area 1 - Remote Clinic Stub/Non-backbone Area)
+! LOCATION:     Remote Spoke Clinic - Telecomm Equipment Closet
+! ROLE:         Single-Chassis Branch Distribution Gateway / Spoke Root Bridge
+! UPLINK:       GigabitEthernet0/1 -> Clinic Core Router R2 GigabitEthernet0/0 (/30)
+! DOWNLINKS:    Fa0/23 & Fa0/24 -> SW-A5 (Redundant 802.1Q Trunks)
+! LOCAL CACHE:  Fa0/10 -> SRV-CACHE (Local Offline EHR Survivability Cache)
 ! ==============================================================================
 
 enable
 configure terminal
 
+! --- Device Identity & System Security ---
 hostname SW-D3
-
-! --- Disable DNS Lookup & Set Banner ---
 no ip domain-lookup
+ip domain-name hospital.local
+
 banner motd ^C
-====================================================================
-  SW-D3: Remote Clinic Distribution Switch - VIT SCOPE CN Project
-  Multilayer Layer-3 Aggregator for Remote Clinic Subnets (OSPF Area 1)
-====================================================================
+================================================================================
+  SW-D3 : Remote Spoke Clinic Multilayer Distribution Switch
+  VIT Vellore - CN Project: Disaster-Resilient Smart Hospital Network
+  UNAUTHORIZED ACCESS IS STRICTLY PROHIBITED. ALL SESSIONS MONITORED.
+================================================================================
 ^C
 
-! --- Management Credentials & Line Security ---
-enable secret class
+! --- Management Authentication & Local Accounts ---
+enable secret class123
+username admin privilege 15 secret class123
+
+! --- SSH Cryptographic Key Generation & VTY Security ---
+crypto key generate rsa modulus 1024
+ip ssh version 2
+
 line con 0
  password cisco
  login
  logging synchronous
  exec-timeout 15 0
+exit
+
 line vty 0 4
- password cisco
- login
- transport input ssh telnet
+ login local
+ transport input ssh
+ exec-timeout 15 0
+exit
+
+line vty 5 15
+ login local
+ transport input ssh
  exec-timeout 15 0
 exit
 
@@ -40,123 +56,215 @@ ip routing
 
 ! --- VLAN Database Definition ---
 vlan 10
- name Remote_Clinical
+ name Clinic_Clinical
 vlan 30
- name Remote_Admin
-vlan 50
- name Remote_Server_Cache
+ name Clinic_Admin
+vlan 40
+ name Clinic_Guest
 vlan 60
- name Remote_VoIP
+ name Clinic_Voice
 vlan 99
  name Management
 vlan 999
  name Parking_Native
 exit
 
-! --- Spanning Tree Mode ---
-spanning-tree mode pvst
-spanning-tree vlan 10,30,50,60,99 root primary
+! --- Spanning Tree Protocol: Rapid PVST+ Configuration ---
+! SW-D3 is Root Primary for all Remote Clinic Spoke VLANs
+spanning-tree mode rapid-pvst
+spanning-tree vlan 10,30,40,60,99 root primary
 
-! --- Switched Virtual Interfaces (SVIs) ---
-! VLAN 10 (Remote Clinical): Subnet 172.16.4.64/27 (Mask 255.255.255.224)
-interface Vlan10
- description SVI_Gateway_for_Remote_Clinical
- ip address 172.16.4.65 255.255.255.224
- no shutdown
-exit
+! --- 802.1Q Redundant Distribution-to-Access Trunks to SW-A5 ---
+! DTP disabled (switchport nonegotiate) and allowed VLANs restricted
 
-! VLAN 30 (Remote Admin): Subnet 172.16.4.96/27 (Mask 255.255.255.224)
-interface Vlan30
- description SVI_Gateway_for_Remote_Admin
- ip address 172.16.4.97 255.255.255.224
- no shutdown
-exit
-
-! VLAN 60 (Remote VoIP): Subnet 172.16.4.128/27 (Mask 255.255.255.224)
-interface Vlan60
- description SVI_Gateway_for_Remote_VoIP
- ip address 172.16.4.129 255.255.255.224
- no shutdown
-exit
-
-! VLAN 50 (Remote Server Cache): Subnet 172.16.4.160/28 (Mask 255.255.255.240)
-interface Vlan50
- description SVI_Gateway_for_Remote_Server_Cache
- ip address 172.16.4.161 255.255.255.240
- no shutdown
-exit
-
-! VLAN 99 (Management): Subnet 172.16.4.176/28 (Mask 255.255.255.240)
-interface Vlan99
- description SVI_Gateway_for_Remote_Management
- ip address 172.16.4.177 255.255.255.240
- no shutdown
-exit
-
-! --- Downlink Trunk to SW-A5 ---
-interface FastEthernet0/1
- description Trunk_Downlink_to_SW-A5_Fa0/24
+! Primary Active Trunk to SW-A5
+interface FastEthernet0/23
+ description Primary_Trunk_Downlink_to_SW-A5_Gig0/1
  switchport trunk encapsulation dot1q
  switchport mode trunk
  switchport trunk native vlan 999
- switchport trunk allowed vlan 10,30,50,60,99
+ switchport trunk allowed vlan 10,30,40,60,99
+ switchport nonegotiate
  no shutdown
 exit
 
-! --- Routed Uplink to Core Router R2 (Point-to-Point /30 Subnet) ---
+! Secondary Standby Trunk to SW-A5 (STP Alternate/Blocking port)
+interface FastEthernet0/24
+ description Redundant_Trunk_Downlink_to_SW-A5_Gig0/2
+ switchport trunk encapsulation dot1q
+ switchport mode trunk
+ switchport trunk native vlan 999
+ switchport trunk allowed vlan 10,30,40,60,99
+ switchport nonegotiate
+ no shutdown
+exit
+
+! --- Dedicated Local Survivability Cache Server Port (VLAN 10) ---
+! Edge port with PortFast enabled for instant link transitions
+interface FastEthernet0/10
+ description Remote_Clinic_Local_EHR_Cache_Server
+ switchport mode access
+ switchport access vlan 10
+ spanning-tree portfast
+ spanning-tree bpduguard enable
+ no shutdown
+exit
+
+! --- Layer 3 Routed Uplink to Core Router R2 (/30 Transit Subnet) ---
 interface GigabitEthernet0/1
- description Routed_Uplink_to_R2_Gig0/0
+ description Routed_Point_to_Point_Uplink_to_R2_Gig0/0
  no switchport
- ip address 172.16.5.9 255.255.255.252
+ ip address 172.16.8.97 255.255.255.252
  no shutdown
 exit
 
-! --- Dynamic Routing: OSPF Process 1 (Area 1 - Remote Clinic) ---
-router ospf 1
- router-id 172.16.5.9
- passive-interface default
- no passive-interface GigabitEthernet0/1
- ! Advertise Remote Clinic subnets into Area 1
- network 172.16.4.64 0.0.0.31 area 1
- network 172.16.4.96 0.0.0.31 area 1
- network 172.16.4.128 0.0.0.31 area 1
- network 172.16.4.160 0.0.0.15 area 1
- network 172.16.4.176 0.0.0.15 area 1
- ! Transit link to R2
- network 172.16.5.8 0.0.0.3 area 1
+! --- Loopback 0 Management & OSPF Router-ID ---
+interface Loopback0
+ description OSPF_Router_ID_and_Management
+ ip address 172.16.8.108 255.255.255.255
+ no shutdown
 exit
 
-! Default route upstream to Core Router R2
-ip route 0.0.0.0 0.0.0.0 172.16.5.10
+! --- Inter-VLAN Routing: Switch Virtual Interfaces (SVIs) ---
+! SW-D3 provides local hardware layer-3 routing for all remote clinic subnets.
+! DHCP Relay: ip helper-address forwards requests across WAN to SRV-CENTRAL (172.16.7.4).
+! Note on Gateway Architecture: SW-D3 operates as the single-chassis default gateway (.1 of each usable pool).
+! For HA dual-chassis deployment, refer to SW-D4 extension (/configs/SW-D4/SW-D4.cfg).
+
+! VLAN 10 : Clinic Clinical Wards & EHR Cache (Subnet: 172.16.8.32/27, SVI Gateway: .33)
+interface Vlan10
+ description SVI_Clinic_Clinical_Gateway
+ ip address 172.16.8.33 255.255.255.224
+ ip helper-address 172.16.7.4
+ no shutdown
+exit
+
+! VLAN 30 : Clinic Administration (Subnet: 172.16.8.0/27, SVI Gateway: .1)
+interface Vlan30
+ description SVI_Clinic_Admin_Gateway
+ ip address 172.16.8.1 255.255.255.224
+ ip helper-address 172.16.7.4
+ no shutdown
+exit
+
+! VLAN 40 : Clinic Guest Wi-Fi (Subnet: 172.16.6.128/25, SVI Gateway: .129)
+interface Vlan40
+ description SVI_Clinic_Guest_Gateway
+ ip address 172.16.6.129 255.255.255.128
+ ip helper-address 172.16.7.4
+ no shutdown
+exit
+
+! VLAN 60 : Clinic VoIP Telephony (Subnet: 172.16.7.224/27, SVI Gateway: .225)
+interface Vlan60
+ description SVI_Clinic_Voice_Gateway
+ ip address 172.16.7.225 255.255.255.224
+ ip helper-address 172.16.7.4
+ no shutdown
+exit
+
+! VLAN 99 : Remote Clinic Management (Subnet: 172.16.8.64/28, SVI Gateway: .65)
+interface Vlan99
+ description In_Band_Management_SVI_SW-D3
+ ip address 172.16.8.65 255.255.255.240
+ no shutdown
+exit
+
+! --- Static Default Route to Core Router R2 ---
+ip route 0.0.0.0 0.0.0.0 172.16.8.98
+
+! --- Security: Shutdown & Park All Unused Physical Interfaces in VLAN 999 ---
+interface range FastEthernet0/1 - 9, FastEthernet0/11 - 22, GigabitEthernet0/2
+ description Security_Unused_Port_Parked_in_VLAN999
+ switchport mode access
+ switchport access vlan 999
+ shutdown
+exit
 
 end
 write memory
 
 ! ==============================================================================
-! VERIFICATION COMMANDS & EXPECTED OUTPUT
+! VERIFICATION COMMANDS & EXPECTED OUTPUT (Cisco Packet Tracer 8.x)
 ! ==============================================================================
 !
-! 1. Verify Layer-3 Routing Table:
-!    SW-D3# show ip route
-!    EXPECTED OUTPUT:
-!    Gateway of last resort is 172.16.5.10 to network 0.0.0.0
-!    C    172.16.4.64/27 is directly connected, Vlan10
-!    C    172.16.4.96/27 is directly connected, Vlan30
-!    C    172.16.4.128/27 is directly connected, Vlan60
-!    C    172.16.4.160/28 is directly connected, Vlan50
-!    C    172.16.4.176/28 is directly connected, Vlan99
-!    C    172.16.5.8/30 is directly connected, GigabitEthernet0/1
-!    O IA 172.16.4.0/27 [110/...] via 172.16.5.10 (Main Hospital Server Farm)
-!    S*   0.0.0.0/0 [1/0] via 172.16.5.10
+! 1. show vlan brief
+! ------------------------------------------------------------------------------
+! SW-D3# show vlan brief
+! VLAN Name                             Status    Ports
+! ---- -------------------------------- --------- -------------------------------
+! 1    default                          active    
+! 10   Clinic_Clinical                  active    Fa0/10
+! 30   Clinic_Admin                     active    
+! 40   Clinic_Guest                     active    
+! 60   Clinic_Voice                     active    
+! 99   Management                       active    
+! 999  Parking_Native                   active    Fa0/1, Fa0/2, Fa0/3, Fa0/4, Fa0/5,
+!                                                 Fa0/6, Fa0/7, Fa0/8, Fa0/9,
+!                                                 Fa0/11, Fa0/12, Fa0/13, Fa0/14,
+!                                                 Fa0/15, Fa0/16, Fa0/17, Fa0/18,
+!                                                 Fa0/19, Fa0/20, Fa0/21, Fa0/22, Gi0/2
 !
-! 2. Verify OSPF Neighbor with Core Router R2:
-!    SW-D3# show ip ospf neighbor
-!    EXPECTED OUTPUT:
-!    Neighbor ID     Pri   State           Dead Time   Address         Interface
-!    172.16.4.201      1   FULL/BDR        00:00:34    172.16.5.10     GigabitEthernet0/1
+! 2. show interfaces trunk
+! ------------------------------------------------------------------------------
+! SW-D3# show interfaces trunk
+! Port        Mode         Encapsulation  Status        Native vlan
+! Fa0/23      on           802.1q         trunking      999
+! Fa0/24      on           802.1q         trunking      999
 !
-! 3. Verify Remote Gateway Ping:
-!    SW-D3# ping 172.16.5.10
-!    EXPECTED OUTPUT:
-!    Success rate is 100 percent (5/5)
+! Port        Vlans allowed on trunk
+! Fa0/23      10,30,40,60,99
+! Fa0/24      10,30,40,60,99
+!
+! 3. show spanning-tree summary
+! ------------------------------------------------------------------------------
+! SW-D3# show spanning-tree summary
+! Switch is in rapid-pvst mode
+! Root bridge for: VLAN0010, VLAN0030, VLAN0040, VLAN0060, VLAN0099
+! Extended system ID is enabled
+!
+! 4. show ip interface brief | include Vlan
+! ------------------------------------------------------------------------------
+! SW-D3# show ip interface brief | include Vlan
+! Vlan10                 172.16.8.33     YES manual up                    up
+! Vlan30                 172.16.8.1      YES manual up                    up
+! Vlan40                 172.16.6.129    YES manual up                    up
+! Vlan60                 172.16.7.225    YES manual up                    up
+! Vlan99                 172.16.8.65     YES manual up                    up
+!
+! 5. show ip route
+! ------------------------------------------------------------------------------
+! SW-D3# show ip route
+! Gateway of last resort is 172.16.8.98 to network 0.0.0.0
+!
+! S*    0.0.0.0/0 [1/0] via 172.16.8.98
+!       172.16.0.0/16 is variably subnetted, 11 subnets, 5 masks
+! C        172.16.6.128/25 is directly connected, Vlan40
+! L        172.16.6.129/32 is directly connected, Vlan40
+! C        172.16.7.224/27 is directly connected, Vlan60
+! L        172.16.7.225/32 is directly connected, Vlan60
+! C        172.16.8.0/27 is directly connected, Vlan30
+! L        172.16.8.1/32 is directly connected, Vlan30
+! C        172.16.8.32/27 is directly connected, Vlan10
+! L        172.16.8.33/32 is directly connected, Vlan10
+! C        172.16.8.64/28 is directly connected, Vlan99
+! L        172.16.8.65/32 is directly connected, Vlan99
+! C        172.16.8.96/30 is directly connected, GigabitEthernet0/1
+! L        172.16.8.97/32 is directly connected, GigabitEthernet0/1
+! C        172.16.8.108/32 is directly connected, Loopback0
+!
+! 6. Clinic Inter-VLAN Ping Verification Commands (execute from privileged exec)
+! ------------------------------------------------------------------------------
+! SW-D3# ping 172.16.8.36              ! Ping SRV-CACHE (Local Clinic EHR Server) -> Success rate 100 percent
+! SW-D3# ping 172.16.8.42              ! Ping PC-CLINIC-CONSULT1 (VLAN 10 Clinical) -> Success rate 100 percent
+! SW-D3# ping 172.16.8.10              ! Ping PC-CLINIC-ADM1 (VLAN 30 Admin) -> Success rate 100 percent
+! SW-D3# ping 172.16.7.234             ! Ping PHONE-CLINIC-601 (VLAN 60 Voice) -> Success rate 100 percent
+! SW-D3# ping 172.16.8.98              ! Ping Core Router R2 Gig0/0 Transit Link -> Success rate 100 percent
+!
+! 7. Architecture Note on Clinic Single Point of Failure (SPOF)
+! ------------------------------------------------------------------------------
+! In this base topology, SW-D3 is the sole distribution switch for the Remote Spoke Clinic.
+! If SW-D3 fails, all local inter-VLAN routing and uplink WAN connectivity to R2 ceases.
+! To eliminate this SPOF, enable the SW-D4 High-Availability extension detailed in
+! /configs/SW-D4/README.md and /docs/intervlan_hsrp_guide.md.
 ! ==============================================================================

@@ -7,6 +7,20 @@ and this project adheres to Semantic Versioning.
 
 ---
 
+## [1.2.0] - 2026-10-14
+
+### Added
+- **Phase 3.2: Inter-VLAN Routing & Gateway Redundancy Architecture:**
+  - Configured hardware `ip routing` and Switch Virtual Interfaces (SVIs) on `SW-D1`, `SW-D2`, `SW-D3`, and `SW-D4`.
+  - Implemented **HSRP Version 2** (`standby version 2`) across Main Hospital distribution pair (`SW-D1` / `SW-D2`) with VIP `.1` across all enterprise VLANs.
+  - Implemented **Deterministic Fate-Sharing**: Aligned HSRP Active role with Rapid PVST+ Primary Root (Group 1: VLANs 10, 30, 50, 99 on `SW-D1`; Group 2: VLANs 20, 40, 60 on `SW-D2`), eliminating sub-optimal inter-switch cross-link traversal.
+  - Configured intelligent uplink interface tracking on active gateways (`standby <vlan> track GigabitEthernet0/2 20`), ensuring dynamic priority decrement from `110` to `90` upon core transit link failure, triggering immediate preemption by the standby node (`priority 100`).
+  - Added centralized DHCP relay (`ip helper-address 172.16.7.4`) across all client SVIs pointing to `SRV-CENTRAL` on VLAN 50.
+  - Configured routed point-to-point `/30` uplinks to Core Routers (`SW-D1` Gi0/2 -> R1, `SW-D2` Gi0/2 -> R1, `SW-D3` Gi0/1 -> R2) with static default routes.
+  - Conducted honest Single Point of Failure (SPOF) critique of `SW-D3` single-chassis clinic design and engineered the optional `SW-D4` dual-chassis High-Availability branch extension (`configs/SW-D4/` and `configs/SW-D3/SW-D3_ha_extension.cfg`).
+  - Produced comprehensive technical architecture guide: [`docs/intervlan_hsrp_guide.md`](docs/intervlan_hsrp_guide.md) detailing fate-sharing proofs, tracking mechanics, ping matrix, and simulated failure drill protocols.
+  - Added unit test suite `tests/test_intervlan_hsrp.py` hooked into `tasks.py test`, verifying 100% compliance of SVIs, HSRP v2, VIPs, tracking, and helpers.
+
 ## [1.0.0] - 2026-10-07
 
 ### Added

@@ -1,37 +1,54 @@
 ! ==============================================================================
-! DEVICE:       SW-D1 (Main Hospital - Distribution Switch 1)
+! DEVICE:       SW-D1
 ! MODEL:        Cisco Catalyst 3560-24PS (Multilayer Layer-3 Switch)
-! LAYER:        Distribution Layer (Main Hospital Campus)
-! UPLINKS:      GigabitEthernet0/2 -> R1 GigabitEthernet0/0 (Routed Link /30)
-! INTER-DISTRO: GigabitEthernet0/1 -> SW-D2 GigabitEthernet0/1 (802.1Q Trunk)
-! DOWNLINKS:    Fa0/1 -> SW-A1 (ICU), Fa0/3 -> SW-A2 (Surgery), Fa0/10 -> PT Server
+! LOCATION:     Main Hospital Campus - Distribution Rack A
+! ROLE:         Distribution Aggregator / Active Gateway Group 1 / Primary STP Root
+! UPLINK:       GigabitEthernet0/2 -> Core Router R1 GigabitEthernet0/0 (/30 Routed)
+! CROSS-CONNECT:FastEthernet0/23 - 24 -> SW-D2 (EtherChannel Port-Channel 1)
+! DOWNLINKS:    Fa0/1 (SW-A1), Fa0/2 (SW-A2), Fa0/3 (SW-A3), Fa0/4 (SW-A4)
+! SERVERS:      Fa0/10 (SRV-CENTRAL), Fa0/11 (SRV-PACS)
 ! ==============================================================================
 
 enable
 configure terminal
 
+! --- Device Identity & System Security ---
 hostname SW-D1
-
-! --- Disable DNS Lookup & Set Banner ---
 no ip domain-lookup
+ip domain-name hospital.local
+
 banner motd ^C
-====================================================================
-  SW-D1: Main Hospital Distribution Switch 1 - VIT SCOPE CN Project
-  Multilayer Layer-3 Core/Distribution Aggregator
-====================================================================
+================================================================================
+  SW-D1 : Main Hospital Multilayer Distribution Switch 1
+  VIT Vellore - CN Project: Disaster-Resilient Smart Hospital Network
+  UNAUTHORIZED ACCESS IS STRICTLY PROHIBITED. ALL SESSIONS MONITORED.
+================================================================================
 ^C
 
-! --- Management Credentials & Line Security ---
-enable secret class
+! --- Management Authentication & Local Accounts ---
+enable secret class123
+username admin privilege 15 secret class123
+
+! --- SSH Cryptographic Key Generation & VTY Security ---
+crypto key generate rsa modulus 1024
+ip ssh version 2
+
 line con 0
  password cisco
  login
  logging synchronous
  exec-timeout 15 0
+exit
+
 line vty 0 4
- password cisco
- login
- transport input ssh telnet
+ login local
+ transport input ssh
+ exec-timeout 15 0
+exit
+
+line vty 5 15
+ login local
+ transport input ssh
  exec-timeout 15 0
 exit
 
@@ -57,145 +74,350 @@ vlan 999
  name Parking_Native
 exit
 
-! --- Spanning Tree Priority (Primary Root for Clinical & Server Farm) ---
-spanning-tree mode pvst
-spanning-tree vlan 10,20,50,99 root primary
-spanning-tree vlan 30,40,60 root secondary
+! --- Spanning Tree Protocol: Rapid PVST+ Configuration ---
+! Rapid PVST+ (IEEE 802.1w) delivers sub-second convergence vs 30-50s legacy PVST.
+! SW-D1 is Root Primary for Odd Tens / Group 1 (VLANs 10, 30, 50, 99)
+! SW-D1 is Root Secondary for Even Tens / Group 2 (VLANs 20, 40, 60)
+spanning-tree mode rapid-pvst
+spanning-tree vlan 10,30,50,99 root primary
+spanning-tree vlan 20,40,60 root secondary
 
-! --- Switched Virtual Interfaces (SVIs) - Default Gateways for Local VLANs ---
-! VLAN 10 (ICU): Subnet 172.16.3.128/26 (Mask 255.255.255.192)
-interface Vlan10
- description SVI_Gateway_for_ICU_Clinical
- ip address 172.16.3.129 255.255.255.192
- ip helper-address 172.16.4.2
- no shutdown
-exit
-
-! VLAN 20 (Surgery): Subnet 172.16.3.192/26 (Mask 255.255.255.192)
-interface Vlan20
- description SVI_Gateway_for_Surgery_Theatre
- ip address 172.16.3.193 255.255.255.192
- ip helper-address 172.16.4.2
- no shutdown
-exit
-
-! VLAN 50 (Server Farm): Subnet 172.16.4.0/27 (Mask 255.255.255.224)
-interface Vlan50
- description SVI_Gateway_for_Server_Farm
- ip address 172.16.4.1 255.255.255.224
- no shutdown
-exit
-
-! VLAN 99 (Management): Subnet 172.16.4.32/27 (Mask 255.255.255.224)
-interface Vlan99
- description SVI_Gateway_for_Management
- ip address 172.16.4.33 255.255.255.224
- no shutdown
-exit
-
-! --- Inter-Distribution Trunk to SW-D2 ---
-interface GigabitEthernet0/1
- description Inter_Distribution_Trunk_to_SW-D2_Gi0/1
+! --- Inter-Distribution EtherChannel (Port-Channel 1 to SW-D2) ---
+! Bundles Fa0/23 and Fa0/24 into an aggregate 200 Mbps full-duplex cross-link.
+! Uses 'channel-group 1 mode on' for deterministic Packet Tracer 8.x stability.
+interface range FastEthernet0/23 - 24
+ description Inter_Distribution_EtherChannel_Member_to_SW-D2
  switchport trunk encapsulation dot1q
  switchport mode trunk
  switchport trunk native vlan 999
  switchport trunk allowed vlan 10,20,30,40,50,60,99
+ switchport nonegotiate
+ channel-group 1 mode on
  no shutdown
 exit
 
-! --- Downlink Trunks to Access Layer Switches ---
+interface Port-channel 1
+ description Aggregate_Trunk_CrossLink_to_SW-D2
+ switchport trunk encapsulation dot1q
+ switchport mode trunk
+ switchport trunk native vlan 999
+ switchport trunk allowed vlan 10,20,30,40,50,60,99
+ switchport nonegotiate
+ no shutdown
+exit
+
+! --- 802.1Q Distribution-to-Access Trunk Downlinks ---
+! DTP disabled (switchport nonegotiate) and allowed VLANs restricted per switch
+
+! Trunk to SW-A1 (ICU Floor: VLANs 10, 60, 99)
 interface FastEthernet0/1
- description Trunk_Downlink_to_SW-A1_Fa0/24
+ description Primary_Trunk_Downlink_to_SW-A1_Gig0/1
  switchport trunk encapsulation dot1q
  switchport mode trunk
  switchport trunk native vlan 999
- switchport trunk allowed vlan 10,20,30,40,50,60,99
+ switchport trunk allowed vlan 10,60,99
+ switchport nonegotiate
  no shutdown
 exit
 
+! Trunk to SW-A2 (Surgery Floor: VLANs 20, 60, 99)
+interface FastEthernet0/2
+ description Primary_Trunk_Downlink_to_SW-A2_Gig0/1
+ switchport trunk encapsulation dot1q
+ switchport mode trunk
+ switchport trunk native vlan 999
+ switchport trunk allowed vlan 20,60,99
+ switchport nonegotiate
+ no shutdown
+exit
+
+! Trunk to SW-A3 (Admin Floor: VLANs 30, 60, 99 - Secondary Standby)
 interface FastEthernet0/3
- description Trunk_Downlink_to_SW-A2_Fa0/24
+ description Secondary_Trunk_Downlink_to_SW-A3_Gig0/2
  switchport trunk encapsulation dot1q
  switchport mode trunk
  switchport trunk native vlan 999
- switchport trunk allowed vlan 10,20,30,40,50,60,99
+ switchport trunk allowed vlan 30,60,99
+ switchport nonegotiate
  no shutdown
 exit
 
-! --- Dedicated Server Farm Port (PT Central Server: 172.16.4.2) ---
+! Trunk to SW-A4 (Guest Wi-Fi: VLANs 40, 99 - Secondary Standby)
+interface FastEthernet0/4
+ description Secondary_Trunk_Downlink_to_SW-A4_Gig0/2
+ switchport trunk encapsulation dot1q
+ switchport mode trunk
+ switchport trunk native vlan 999
+ switchport trunk allowed vlan 40,99
+ switchport nonegotiate
+ switchport block unicast
+ no shutdown
+exit
+
+! --- Dedicated Server Farm Access Ports (VLAN 50) ---
+! Edge ports with PortFast enabled for instant link transitions
 interface FastEthernet0/10
- description Server_Farm_Central_Hospital_Server
+ description Server_Farm_Central_Hospital_Server_(DNS_DHCP_Web)
  switchport mode access
  switchport access vlan 50
  spanning-tree portfast
+ spanning-tree bpduguard enable
  no shutdown
 exit
 
-! --- Routed Uplink to Core Router R1 (Point-to-Point /30 Subnet) ---
+interface FastEthernet0/11
+ description Server_Farm_PACS_Imaging_Archive_Server
+ switchport mode access
+ switchport access vlan 50
+ spanning-tree portfast
+ spanning-tree bpduguard enable
+ no shutdown
+exit
+
+! --- Layer 3 Routed Uplink to Core Router R1 (/30 Transit Subnet) ---
 interface GigabitEthernet0/2
- description Routed_Uplink_to_R1_Gig0/0
+ description Routed_Point_to_Point_Uplink_to_R1_Gig0/0
  no switchport
- ip address 172.16.5.1 255.255.255.252
+ ip address 172.16.8.89 255.255.255.252
  no shutdown
 exit
 
-! --- Dynamic Routing: OSPF Process 1 (Backbone Area 0) ---
-router ospf 1
- router-id 172.16.5.1
- passive-interface default
- no passive-interface GigabitEthernet0/2
- no passive-interface GigabitEthernet0/1
- ! Advertise clinical and server subnets into Area 0
- network 172.16.3.128 0.0.0.63 area 0
- network 172.16.3.192 0.0.0.63 area 0
- network 172.16.4.0 0.0.0.31 area 0
- network 172.16.4.32 0.0.0.31 area 0
- ! Transit link to R1
- network 172.16.5.0 0.0.0.3 area 0
+! --- Loopback 0 Management & OSPF Router-ID ---
+interface Loopback0
+ description OSPF_Router_ID_and_Management
+ ip address 172.16.8.106 255.255.255.255
+ no shutdown
 exit
 
-! Default route upstream to Core Router R1
-ip route 0.0.0.0 0.0.0.0 172.16.5.2
+! --- Inter-VLAN Routing: Switch Virtual Interfaces (SVIs) & HSRP v2 ---
+! Group 1 (Odd VLANs: 10, 30, 50, 99): SW-D1 is ACTIVE (Priority 110, Preempt, Track Gi0/2 decr 20)
+! Group 2 (Even VLANs: 20, 40, 60): SW-D1 is STANDBY (Priority 100, Preempt)
+! DHCP Relay: ip helper-address points to Central DHCP Server SRV-CENTRAL (172.16.7.4)
+
+! VLAN 10 : ICU Clinical Wards (Subnet: 172.16.7.128/26, VIP: .129, SVI: .130 - ACTIVE)
+interface Vlan10
+ description SVI_ICU_Clinical_Gateway
+ ip address 172.16.7.130 255.255.255.192
+ ip helper-address 172.16.7.4
+ standby version 2
+ standby 10 ip 172.16.7.129
+ standby 10 priority 110
+ standby 10 preempt
+ standby 10 track GigabitEthernet0/2 20
+ no shutdown
+exit
+
+! VLAN 20 : Surgery Operating Theatres (Subnet: 172.16.7.64/26, VIP: .65, SVI: .66 - STANDBY)
+interface Vlan20
+ description SVI_Surgery_Theatre_Gateway
+ ip address 172.16.7.66 255.255.255.192
+ ip helper-address 172.16.7.4
+ standby version 2
+ standby 20 ip 172.16.7.65
+ standby 20 priority 100
+ standby 20 preempt
+ no shutdown
+exit
+
+! VLAN 30 : Hospital Administration (Subnet: 172.16.4.0/23, VIP: .1, SVI: .2 - ACTIVE)
+interface Vlan30
+ description SVI_Administration_Gateway
+ ip address 172.16.4.2 255.255.254.0
+ ip helper-address 172.16.7.4
+ standby version 2
+ standby 30 ip 172.16.4.1
+ standby 30 priority 110
+ standby 30 preempt
+ standby 30 track GigabitEthernet0/2 20
+ no shutdown
+exit
+
+! VLAN 40 : Hospital Guest Wi-Fi (Subnet: 172.16.0.0/22, VIP: .1, SVI: .2 - STANDBY)
+interface Vlan40
+ description SVI_Guest_WiFi_Gateway
+ ip address 172.16.0.2 255.255.252.0
+ ip helper-address 172.16.7.4
+ standby version 2
+ standby 40 ip 172.16.0.1
+ standby 40 priority 100
+ standby 40 preempt
+ no shutdown
+exit
+
+! VLAN 50 : Central Server Farm (Subnet: 172.16.7.0/26, VIP: .1, SVI: .2 - ACTIVE)
+interface Vlan50
+ description SVI_Server_Farm_Gateway
+ ip address 172.16.7.2 255.255.255.192
+ standby version 2
+ standby 50 ip 172.16.7.1
+ standby 50 priority 110
+ standby 50 preempt
+ standby 50 track GigabitEthernet0/2 20
+ no shutdown
+exit
+
+! VLAN 60 : VoIP Telephony (Subnet: 172.16.6.0/25, VIP: .1, SVI: .2 - STANDBY)
+interface Vlan60
+ description SVI_VoIP_Voice_Gateway
+ ip address 172.16.6.2 255.255.255.128
+ ip helper-address 172.16.7.4
+ standby version 2
+ standby 60 ip 172.16.6.1
+ standby 60 priority 100
+ standby 60 preempt
+ no shutdown
+exit
+
+! VLAN 99 : Out-of-Band Management (Subnet: 172.16.7.192/27, VIP: .193, SVI: .194 - ACTIVE)
+interface Vlan99
+ description In_Band_Management_SVI_SW-D1
+ ip address 172.16.7.194 255.255.255.224
+ standby version 2
+ standby 99 ip 172.16.7.193
+ standby 99 priority 110
+ standby 99 preempt
+ standby 99 track GigabitEthernet0/2 20
+ no shutdown
+exit
+
+! --- Static Default Route to Core Router R1 ---
+ip route 0.0.0.0 0.0.0.0 172.16.8.90
+
+! --- Security: Shutdown & Park All Unused Physical Interfaces in VLAN 999 ---
+interface range FastEthernet0/5 - 9, FastEthernet0/12 - 22, GigabitEthernet0/1
+ description Security_Unused_Port_Parked_in_VLAN999
+ switchport mode access
+ switchport access vlan 999
+ shutdown
+exit
 
 end
 write memory
 
 ! ==============================================================================
-! VERIFICATION COMMANDS & EXPECTED OUTPUT
+! VERIFICATION COMMANDS & EXPECTED OUTPUT (Cisco Packet Tracer 8.x)
 ! ==============================================================================
 !
-! 1. Verify Layer-3 Routing Table:
-!    SW-D1# show ip route
-!    EXPECTED OUTPUT:
-!    Gateway of last resort is 172.16.5.2 to network 0.0.0.0
-!    C    172.16.3.128/26 is directly connected, Vlan10
-!    C    172.16.3.192/26 is directly connected, Vlan20
-!    C    172.16.4.0/27 is directly connected, Vlan50
-!    C    172.16.4.32/27 is directly connected, Vlan99
-!    C    172.16.5.0/30 is directly connected, GigabitEthernet0/2
-!    O    172.16.0.0/23 [110/...] via 172.16.5.2 / SW-D2 (learned via OSPF)
-!    S*   0.0.0.0/0 [1/0] via 172.16.5.2
+! 1. show vlan brief
+! ------------------------------------------------------------------------------
+! SW-D1# show vlan brief
+! VLAN Name                             Status    Ports
+! ---- -------------------------------- --------- -------------------------------
+! 1    default                          active    
+! 10   ICU_Clinical                     active    
+! 20   Surgery_Theatre                  active    
+! 30   Administration                   active    
+! 40   Guest_WiFi                       active    
+! 50   Server_Farm                      active    Fa0/10, Fa0/11
+! 60   VoIP_Voice                       active    
+! 99   Management                       active    
+! 999  Parking_Native                   active    Fa0/5, Fa0/6, Fa0/7, Fa0/8, Fa0/9,
+!                                                 Fa0/12, Fa0/13, Fa0/14, Fa0/15,
+!                                                 Fa0/16, Fa0/17, Fa0/18, Fa0/19,
+!                                                 Fa0/20, Fa0/21, Fa0/22, Gi0/1
 !
-! 2. Verify SVIs Status:
-!    SW-D1# show ip interface brief
-!    EXPECTED OUTPUT:
-!    Vlan10                 172.16.3.129    YES manual up                    up      
-!    Vlan20                 172.16.3.193    YES manual up                    up      
-!    Vlan50                 172.16.4.1      YES manual up                    up      
-!    Vlan99                 172.16.4.33     YES manual up                    up      
-!    GigabitEthernet0/2     172.16.5.1      YES manual up                    up      
+! 2. show interfaces trunk
+! ------------------------------------------------------------------------------
+! SW-D1# show interfaces trunk
+! Port        Mode         Encapsulation  Status        Native vlan
+! Fa0/1       on           802.1q         trunking      999
+! Fa0/2       on           802.1q         trunking      999
+! Fa0/3       on           802.1q         trunking      999
+! Fa0/4       on           802.1q         trunking      999
+! Po1         on           802.1q         trunking      999
 !
-! 3. Verify OSPF Neighbor with R1:
-!    SW-D1# show ip ospf neighbor
-!    EXPECTED OUTPUT:
-!    Neighbor ID     Pri   State           Dead Time   Address         Interface
-!    172.16.4.200      1   FULL/BDR        00:00:35    172.16.5.2      GigabitEthernet0/2
+! Port        Vlans allowed on trunk
+! Fa0/1       10,60,99
+! Fa0/2       20,60,99
+! Fa0/3       30,60,99
+! Fa0/4       40,99
+! Po1         10,20,30,40,50,60,99
 !
-! 4. Verify Spanning Tree Root:
-!    SW-D1# show spanning-tree root
-!    EXPECTED OUTPUT:
-!    Vlan10   SW-D1 is root
-!    Vlan20   SW-D1 is root
-!    Vlan50   SW-D1 is root
-!    Vlan99   SW-D1 is root
+! 3. show spanning-tree summary
+! ------------------------------------------------------------------------------
+! SW-D1# show spanning-tree summary
+! Switch is in rapid-pvst mode
+! Root bridge for: VLAN0010, VLAN0030, VLAN0050, VLAN0099
+! Extended system ID is enabled
+!
+! 4. show etherchannel summary
+! ------------------------------------------------------------------------------
+! SW-D1# show etherchannel summary
+! Group  Port-channel  Protocol    Ports
+! ------+-------------+-----------+-----------------------------------------------
+! 1      Po1(SU)          -        Fa0/23(P)   Fa0/24(P)
+!
+! 5. show ip interface brief | include Vlan
+! ------------------------------------------------------------------------------
+! SW-D1# show ip interface brief | include Vlan
+! Vlan10                 172.16.7.130    YES manual up                    up
+! Vlan20                 172.16.7.66     YES manual up                    up
+! Vlan30                 172.16.4.2      YES manual up                    up
+! Vlan40                 172.16.0.2      YES manual up                    up
+! Vlan50                 172.16.7.2      YES manual up                    up
+! Vlan60                 172.16.6.2      YES manual up                    up
+! Vlan99                 172.16.7.194    YES manual up                    up
+!
+! 6. show standby brief
+! ------------------------------------------------------------------------------
+! SW-D1# show standby brief
+!                      P indicates configured to preempt.
+!                      |
+! Interface   Grp  Pri P State   Active          Standby         Virtual IP
+! Vl10        10   110 P Active  local           172.16.7.131    172.16.7.129
+! Vl20        20   100 P Standby 172.16.7.67     local           172.16.7.65
+! Vl30        30   110 P Active  local           172.16.4.3      172.16.4.1
+! Vl40        40   100 P Standby 172.16.0.3      local           172.16.0.1
+! Vl50        50   110 P Active  local           172.16.7.3      172.16.7.1
+! Vl60        60   100 P Standby 172.16.6.3      local           172.16.6.1
+! Vl99        99   110 P Active  local           172.16.7.195    172.16.7.193
+!
+! 7. show ip route
+! ------------------------------------------------------------------------------
+! SW-D1# show ip route
+! Gateway of last resort is 172.16.8.90 to network 0.0.0.0
+!
+! S*    0.0.0.0/0 [1/0] via 172.16.8.90
+!       172.16.0.0/16 is variably subnetted, 15 subnets, 6 masks
+! C        172.16.0.0/22 is directly connected, Vlan40
+! L        172.16.0.2/32 is directly connected, Vlan40
+! C        172.16.4.0/23 is directly connected, Vlan30
+! L        172.16.4.2/32 is directly connected, Vlan30
+! C        172.16.6.0/25 is directly connected, Vlan60
+! L        172.16.6.2/32 is directly connected, Vlan60
+! C        172.16.7.0/26 is directly connected, Vlan50
+! L        172.16.7.2/32 is directly connected, Vlan50
+! C        172.16.7.64/26 is directly connected, Vlan20
+! L        172.16.7.66/32 is directly connected, Vlan20
+! C        172.16.7.128/26 is directly connected, Vlan10
+! L        172.16.7.130/32 is directly connected, Vlan10
+! C        172.16.7.192/27 is directly connected, Vlan99
+! L        172.16.7.194/32 is directly connected, Vlan99
+! C        172.16.8.88/30 is directly connected, GigabitEthernet0/2
+! L        172.16.8.89/32 is directly connected, GigabitEthernet0/2
+! C        172.16.8.106/32 is directly connected, Loopback0
+!
+! 8. Inter-VLAN Ping Verification Commands (execute from privileged exec)
+! ------------------------------------------------------------------------------
+! SW-D1# ping 172.16.7.4               ! Ping SRV-CENTRAL (VLAN 50 Server Farm) -> Success rate 100 percent
+! SW-D1# ping 172.16.7.141             ! Ping PC-ICU-NURSE (VLAN 10 ICU Clinical) -> Success rate 100 percent
+! SW-D1# ping 172.16.7.76              ! Ping PC-THEATRE-1 (VLAN 20 Surgery) -> Success rate 100 percent
+! SW-D1# ping 172.16.4.10              ! Ping PC-ADMIN-301 (VLAN 30 Admin) -> Success rate 100 percent
+! SW-D1# ping 172.16.8.90              ! Ping Core Router R1 Gig0/0 Transit Link -> Success rate 100 percent
+!
+! 9. Simulated HSRP Failure Drill Protocol
+! ------------------------------------------------------------------------------
+! Step 1: Verify SW-D1 is Active for VLAN 10 (Pri 110) via 'show standby brief'.
+! Step 2: Simulate failure of Core Router R1 uplink:
+!         SW-D1(config)# interface GigabitEthernet0/2
+!         SW-D1(config-if)# shutdown
+! Step 3: Observe syslog priority decrement (110 - 20 = 90):
+!         %STANDBY-6-STATECHANGE: Vlan10 Group 10 state Active -> Speak
+!         %STANDBY-6-STATECHANGE: Vlan10 Group 10 state Speak -> Standby
+! Step 4: Verify SW-D2 preempts and becomes Active for Group 10 (Pri 100 > 90).
+! Step 5: Restore the uplink:
+!         SW-D1(config)# interface GigabitEthernet0/2
+!         SW-D1(config-if)# no shutdown
+! Step 6: SW-D1 recovers priority 110, preempts SW-D2, and regains Active state:
+!         %STANDBY-6-STATECHANGE: Vlan10 Group 10 state Standby -> Active
 ! ==============================================================================
