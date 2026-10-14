@@ -53,10 +53,11 @@ def task_test():
     ok16 = run_command(["tests/test_medical_sensor_app.py"], "Executing Clinical Sensor Application & Gateway Tests")
     ok17 = run_command(["tests/test_benchmark_sweep.py"], "Executing ARQ Simulation Sweep & Statistics Tests")
     ok18 = run_command(["tests/test_analysis_charts.py"], "Executing Protocol Analysis Charts & Findings Tests")
+    ok19 = run_command(["tests/test_test_matrix.py"], "Executing Master Verification Test Matrix Tests")
     return (
         ok1 and ok2 and ok3 and ok4 and ok5 and ok6 and ok7 and ok8 and
         ok9 and ok10 and ok11 and ok12 and ok13 and ok14 and ok15 and ok16 and
-        ok17 and ok18
+        ok17 and ok18 and ok19
     )
 
 def task_lint():
@@ -74,7 +75,8 @@ def task_docs():
     ok1 = task_addressing()
     ok2 = run_command(["scripts/utils/generate_traceability.py"], "Regenerating Requirements Traceability Matrix")
     ok3 = run_command(["topology/generate_ptbuilder.py"], "Regenerating PTBuilder Topology Scripts from Cabling Table")
-    return ok1 and ok2 and ok3
+    ok4 = run_command(["verification/generate_test_matrix.py"], "Regenerating Master Verification Test Matrix")
+    return ok1 and ok2 and ok3 and ok4
 
 def task_all():
     print("=" * 70)
