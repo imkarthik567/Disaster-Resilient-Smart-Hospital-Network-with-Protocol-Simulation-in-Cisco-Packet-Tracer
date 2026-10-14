@@ -7,6 +7,19 @@ and this project adheres to Semantic Versioning.
 
 ---
 
+## [1.3.0] - 2026-10-14
+
+### Added
+- **Phase 3.3: Central Server Farm, DHCP Pools, DNS Engine & Application Services:**
+  - Produced comprehensive step-by-step server configuration guide in [`docs/server_setup.md`](docs/server_setup.md) for `SRV-CENTRAL`, `SRV-PACS`, `SRV-BACKUP`, and `SRV-CACHE`.
+  - Configured 9 client VLAN DHCP pools exported to [`docs/dhcp_pools.csv`](docs/dhcp_pools.csv) and [`addressing/dhcp_pools.csv`](addressing/dhcp_pools.csv) with default gateways set to HSRP VIPs (`.1`), DNS server `172.16.7.4`, Option 150 for VoIP (`172.16.7.4`), and explicit exclusion of infrastructure and static host blocks.
+  - Specified authoritative DNS engine with 6 A-records (`records.hospital.local`, `portal.hospital.local`, `pacs.hospital.local`, `voip.hospital.local`, `ntp.hospital.local`, `backup.hospital.local`) and CNAME aliases (`www.hospital.local` -> `portal.hospital.local`, `ehr.hospital.local` -> `records.hospital.local`).
+  - Implemented custom self-identifying responsive HTML interfaces for clinical dashboard portal, EHR patient charting, and dark-mode PACS imaging archive viewer.
+  - Configured TFTP on `SRV-CENTRAL` for Cisco switch/router configuration backups and FTP on `SRV-PACS` with credentialed access (`pacsuser`/`pacs123`) for bulk DICOM image transfers.
+  - Documented in-depth sequence flow of remote clinic DHCP relay crossing the WAN (`GIADDR` insertion on `SW-D3`) and conducted technical failure-mode analysis of WAN disruption (lease retention vs APIPA fallback upon $T_{100}$ expiry).
+  - Formulated end-to-end verification test matrix covering DHCP lease acquisition, `nslookup` FQDN resolution, HTTP web loading, and TFTP backup execution.
+  - Created automated test suite `tests/test_server_setup.py` integrated into `tasks.py test`.
+
 ## [1.2.0] - 2026-10-14
 
 ### Added
