@@ -1,11 +1,13 @@
 ! ==============================================================================
-! DEVICE:       R2 (Remote Clinic - Core Router / ABR)
+! DEVICE:       R2
+! HOSTNAME:     R2 (Remote Clinic - Core Router / ABR)
 ! MODEL:        Cisco 2911 Integrated Services Router
 ! MODULES:      HWIC-2T installed in Slot 0 (provides Serial0/0/0 & Serial0/0/1)
 ! WAN PRIMARY:  Serial0/0/0 (DTE) -> R1 Se0/0/0 [OSPF Area 0 Backbone, AD 110]
-! WAN BACKUP:   Serial0/0/1 (DTE) -> R1 Se0/0/1 [EIGRP AS 100, AD adjusted to 120]
-! LAN LINK:     GigabitEthernet0/0 -> SW-D3 Gi0/1 [OSPF Area 1 - Remote Clinic]
+! WAN BACKUP:   Serial0/0/1 (DTE) -> R1 Se0/0/1 [EIGRP AS 100 Standby, AD adjusted to 120]
+! LAN LINK:     GigabitEthernet0/0 -> SW-D3 Gi0/1 (172.16.8.96/30) [OSPF Area 1]
 ! ROLE:         OSPF Area Border Router (ABR) connecting Area 0 and Area 1
+! LOOPBACK0:    172.16.8.105/32 (OSPF Router ID & Management)
 ! ==============================================================================
 
 enable
@@ -29,6 +31,8 @@ line con 0
  login
  logging synchronous
  exec-timeout 15 0
+exit
+
 line vty 0 4
  password cisco
  login
@@ -39,56 +43,81 @@ exit
 ! --- Loopback0 Interface (OSPF Router ID) ---
 interface Loopback0
  description OSPF_Router_ID_and_Management
- ip address 172.16.4.201 255.255.255.255
+ ip address 172.16.8.105 255.255.255.255
  no shutdown
 exit
 
 ! --- LAN Point-to-Point Uplink to Remote Distribution Switch (SW-D3) ---
 interface GigabitEthernet0/0
  description Link_to_SW-D3_Gi0/1_Area1
- ip address 172.16.5.10 255.255.255.252
+ ip address 172.16.8.98 255.255.255.252
+ ip ospf network point-to-point
  no shutdown
+exit
+
+! --- Cryptographic Key-Chain for EIGRP Authentication ---
+key chain EIGRP_AUTH
+ key 1
+  key-string CiscoHospital2026
 exit
 
 ! --- Primary WAN Link (Serial0/0/0 - DTE): OSPF Area 0 Backbone ---
 interface Serial0/0/0
  description Primary_WAN_Link_to_R1_Se0/0/0_OSPF_Area0
- ip address 172.16.4.194 255.255.255.252
+ ip address 172.16.8.82 255.255.255.252
  bandwidth 2048
+ ip ospf network point-to-point
+ ip ospf cost 48
+ ip ospf hello-interval 1
+ ip ospf dead-interval 4
+ ip ospf authentication message-digest
+ ip ospf message-digest-key 1 md5 CiscoHospital2026
  no shutdown
 exit
 
 ! --- Secondary WAN Link (Serial0/0/1 - DTE): Standby EIGRP AS 100 ---
 interface Serial0/0/1
  description Standby_WAN_Link_to_R1_Se0/0/1_EIGRP_Backup
- ip address 172.16.4.198 255.255.255.252
+ ip address 172.16.8.86 255.255.255.252
  bandwidth 1544
+ ip authentication mode eigrp 100 md5
+ ip authentication key-chain eigrp 100 EIGRP_AUTH
  no shutdown
 exit
 
 ! --- Dynamic Routing: Multi-Area OSPF Process 1 (ABR Role) ---
 router ospf 1
- router-id 172.16.4.201
- ! Area 0: WAN Primary Serial Link to R1
- network 172.16.4.192 0.0.0.3 area 0
+ router-id 172.16.8.105
+ ! Security: Passive-interface default prevents rogue adjacencies
+ passive-interface default
+ no passive-interface GigabitEthernet0/0
+ no passive-interface Serial0/0/0
+ no passive-interface Loopback0
+ ! Inter-Area Route Summarization (Area 1 -> Area 0)
+ ! Condenses 6 individual clinic subnets into 3 summary LSAs (50% LSDB reduction)
+ area 1 range 172.16.8.0 255.255.255.0       ! Summarizes Admin, Clinical, Mgmt, and Transit
+ area 1 range 172.16.6.128 255.255.255.128   ! Summarizes Clinic Guest Wi-Fi
+ area 1 range 172.16.7.224 255.255.255.224   ! Summarizes Clinic VoIP Voice
+ ! Area 0: WAN Primary Serial Link & Loopback0
+ network 172.16.8.105 0.0.0.0 area 0       ! Loopback0 in Area 0
+ network 172.16.8.80 0.0.0.3 area 0         ! Primary Serial Se0/0/0 in Area 0
  ! Area 1: Remote Clinic Campus Network
- network 172.16.4.201 0.0.0.0 area 1       ! Loopback0 in Area 1
- network 172.16.5.8 0.0.0.3 area 1         ! Link to SW-D3 in Area 1
+ network 172.16.8.96 0.0.0.3 area 1         ! Link to SW-D3 in Area 1
 exit
 
 ! --- Dynamic Routing: EIGRP AS 100 (Secondary Standby Path) ---
+! CRITICAL: Default EIGRP AD is 90, which beats OSPF (110).
+! By raising EIGRP internal AD to 120, OSPF is ALWAYS preferred when primary WAN is UP.
 router eigrp 100
  no auto-summary
- network 172.16.4.196 0.0.0.3              ! Secondary Serial Se0/0/1
- network 172.16.5.8 0.0.0.3                ! Link to SW-D3
- ! Remote Clinic subnets for secondary advertisement
- network 172.16.4.64 0.0.0.31
- network 172.16.4.96 0.0.0.31
- network 172.16.4.128 0.0.0.31
- network 172.16.4.160 0.0.0.15
- network 172.16.4.176 0.0.0.15
- ! Raise AD: internal=120, external=170
+ network 172.16.8.84 0.0.0.3                ! Secondary Serial Se0/0/1
+ network 172.16.8.96 0.0.0.3                ! Link to SW-D3
+ network 172.16.8.0 0.0.0.255               ! Clinic subnets
+ network 172.16.6.128 0.0.0.127             ! Clinic Guest Wi-Fi
+ network 172.16.7.224 0.0.0.31              ! Clinic Voice
  distance eigrp 120 170
+ passive-interface default
+ no passive-interface Serial0/0/1
 exit
 
 ! --- Quality of Service (QoS): Modular QoS CLI (MQC) ---
@@ -135,25 +164,48 @@ write memory
 !    R2# show ip ospf neighbor
 !    EXPECTED OUTPUT:
 !    Neighbor ID     Pri   State           Dead Time   Address         Interface
-!    172.16.4.200      1   FULL/  -        00:00:36    172.16.4.193    Serial0/0/0 (Area 0 to R1)
-!    172.16.5.9        1   FULL/BDR        00:00:33    172.16.5.9      GigabitEthernet0/0 (Area 1 to SW-D3)
+!    172.16.8.104      0   FULL/  -        00:00:03    172.16.8.81     Serial0/0/0 (Area 0 to R1)
+!    172.16.8.108      0   FULL/  -        00:00:35    172.16.8.97     GigabitEthernet0/0 (Area 1 to SW-D3)
+!    (Notice: Point-to-point network type on both interfaces eliminates DR/BDR)
 !
-! 3. Verify Active Routes to Main Hospital (Normal State):
-!    R2# show ip route ospf
-!    EXPECTED OUTPUT:
-!    O IA 172.16.4.0/27 [110/...] via 172.16.4.193, Serial0/0/0 (Main Server Farm)
-!    O IA 172.16.3.128/26 [110/...] via 172.16.4.193, Serial0/0/0 (Main ICU)
-!    O*IA 0.0.0.0/0 [110/...] via 172.16.4.193, Serial0/0/0 (Default Route to Internet)
-!
-! 4. Verify Standby EIGRP Neighbor:
+! 3. Verify Standby EIGRP Neighbor:
 !    R2# show ip eigrp neighbors
 !    EXPECTED OUTPUT:
-!    H   Address          Interface     Hold  Uptime    SRTT   RTO   Q   Seq
-!    0   172.16.4.197     Se0/0/1       12    00:15:30   25    200   0   12
+!    H   Address          Interface       Hold  Uptime    SRTT   RTO   Q   Seq
+!    0   172.16.8.85      Se0/0/1           13  00:10:48   25    200   0   15
 !
-! 5. Failover Verification:
-!    Shutdown Serial0/0/0 on R1 or R2. Check route table on R2:
-!    R2# show ip route eigrp
+! 4. Verify Active Routes to Main Hospital (Normal State - Primary Link UP):
+!    R2# show ip route
 !    EXPECTED OUTPUT:
-!    D    172.16.4.0/27 [120/...] via 172.16.4.197, Serial0/0/1
+!    Gateway of last resort is 172.16.8.81 to network 0.0.0.0
+!    O*E2 0.0.0.0/0 [110/20] via 172.16.8.81, Serial0/0/0 (Default Route from R1)
+!         172.16.0.0/16 is variably subnetted, 17 subnets, 6 masks
+!    O    172.16.0.0/22 [110/50] via 172.16.8.81, Serial0/0/0 (Main Guest Wi-Fi)
+!    O    172.16.4.0/23 [110/50] via 172.16.8.81, Serial0/0/0 (Main Admin)
+!    O    172.16.6.0/25 [110/50] via 172.16.8.81, Serial0/0/0 (Main VoIP)
+!    O    172.16.7.0/26 [110/50] via 172.16.8.81, Serial0/0/0 (Main Server Farm)
+!    O    172.16.7.64/26 [110/50] via 172.16.8.81, Serial0/0/0 (Main Surgery)
+!    O    172.16.7.128/26 [110/50] via 172.16.8.81, Serial0/0/0 (Main ICU)
+!    O    172.16.7.192/27 [110/50] via 172.16.8.81, Serial0/0/0 (Main Management)
+!    O    172.16.6.128/25 [110/2] via 172.16.8.97, GigabitEthernet0/0 (Clinic Guest)
+!    O    172.16.7.224/27 [110/2] via 172.16.8.97, GigabitEthernet0/0 (Clinic Voice)
+!    O    172.16.8.0/27 [110/2] via 172.16.8.97, GigabitEthernet0/0 (Clinic Admin)
+!    O    172.16.8.32/27 [110/2] via 172.16.8.97, GigabitEthernet0/0 (Clinic Clinical)
+!    O    172.16.8.64/28 [110/2] via 172.16.8.97, GigabitEthernet0/0 (Clinic Mgmt)
+!    (Notice: All Main Hospital subnets are learned via OSPF Se0/0/0, NOT EIGRP)
+!
+! 5. Test Failover Reconvergence (Simulating Primary WAN Link Failure):
+!    R2(config)# interface Serial0/0/0
+!    R2(config-if)# shutdown
+!    Wait ~4 seconds for OSPF dead-interval expiry, then check routing table:
+!    R2# show ip route
+!    EXPECTED OUTPUT:
+!    D    172.16.0.0/16 [120/2172416] via 172.16.8.85, Serial0/0/1  <-- EIGRP TAKES OVER!
+!
+! 6. Restore Primary Link:
+!    R2(config)# interface Serial0/0/0
+!    R2(config-if)# no shutdown
+!    R2# show ip route
+!    EXPECTED OUTPUT:
+!    O    172.16.7.0/26 [110/50] via 172.16.8.81, Serial0/0/0  <-- OSPF RESTORED!
 ! ==============================================================================

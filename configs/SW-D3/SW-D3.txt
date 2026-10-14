@@ -115,6 +115,7 @@ interface GigabitEthernet0/1
  description Routed_Point_to_Point_Uplink_to_R2_Gig0/0
  no switchport
  ip address 172.16.8.97 255.255.255.252
+ ip ospf network point-to-point
  no shutdown
 exit
 
@@ -170,8 +171,27 @@ interface Vlan99
  no shutdown
 exit
 
-! --- Static Default Route to Core Router R2 ---
-ip route 0.0.0.0 0.0.0.0 172.16.8.98
+! --- Dynamic Routing: Multi-Area OSPF Process 1 (Area 1 Spoke) ---
+router ospf 1
+ router-id 172.16.8.108
+ ! Security: Passive-interface default suppresses OSPF hellos on client host VLANs
+ passive-interface default
+ no passive-interface GigabitEthernet0/1
+ no passive-interface Loopback0
+ ! Remote Clinic Area 1 Advertisements
+ network 172.16.8.108 0.0.0.0 area 1       ! Loopback0 in Area 1
+ network 172.16.8.96 0.0.0.3 area 1         ! Routed link to R2 (Gi0/1)
+ network 172.16.8.32 0.0.0.31 area 1        ! VLAN 10 Clinic Clinical
+ network 172.16.8.0 0.0.0.31 area 1         ! VLAN 30 Clinic Admin
+ network 172.16.6.128 0.0.0.127 area 1      ! VLAN 40 Clinic Guest Wi-Fi
+ network 172.16.7.224 0.0.0.31 area 1       ! VLAN 60 Clinic VoIP
+ network 172.16.8.64 0.0.0.15 area 1        ! VLAN 99 Clinic Management
+exit
+
+! --- Floating Static Default Route to Core Router R2 (AD 200 Backup) ---
+! Primary default route is dynamically learned from R2 via OSPF (Type-5 AS-External originated by R1, AD 110).
+! This floating static route activates only in the event of total dynamic routing failure.
+ip route 0.0.0.0 0.0.0.0 172.16.8.98 200
 
 ! --- Security: Shutdown & Park All Unused Physical Interfaces in VLAN 999 ---
 interface range FastEthernet0/1 - 9, FastEthernet0/11 - 22, GigabitEthernet0/2
@@ -232,36 +252,51 @@ write memory
 ! Vlan60                 172.16.7.225    YES manual up                    up
 ! Vlan99                 172.16.8.65     YES manual up                    up
 !
-! 5. show ip route
+! 5. show ip ospf neighbor
+! ------------------------------------------------------------------------------
+! SW-D3# show ip ospf neighbor
+! Neighbor ID     Pri   State           Dead Time   Address         Interface
+! 172.16.8.105      0   FULL/  -        00:00:35    172.16.8.98     GigabitEthernet0/1
+! (Point-to-point network type eliminates DR/BDR election)
+!
+! 6. show ip route
 ! ------------------------------------------------------------------------------
 ! SW-D3# show ip route
 ! Gateway of last resort is 172.16.8.98 to network 0.0.0.0
 !
-! S*    0.0.0.0/0 [1/0] via 172.16.8.98
-!       172.16.0.0/16 is variably subnetted, 11 subnets, 5 masks
-! C        172.16.6.128/25 is directly connected, Vlan40
-! L        172.16.6.129/32 is directly connected, Vlan40
-! C        172.16.7.224/27 is directly connected, Vlan60
-! L        172.16.7.225/32 is directly connected, Vlan60
-! C        172.16.8.0/27 is directly connected, Vlan30
-! L        172.16.8.1/32 is directly connected, Vlan30
-! C        172.16.8.32/27 is directly connected, Vlan10
-! L        172.16.8.33/32 is directly connected, Vlan10
-! C        172.16.8.64/28 is directly connected, Vlan99
-! L        172.16.8.65/32 is directly connected, Vlan99
-! C        172.16.8.96/30 is directly connected, GigabitEthernet0/1
-! L        172.16.8.97/32 is directly connected, GigabitEthernet0/1
-! C        172.16.8.108/32 is directly connected, Loopback0
+! O*E2 0.0.0.0/0 [110/20] via 172.16.8.98, GigabitEthernet0/1 (Originated by R1)
+!      172.16.0.0/16 is variably subnetted, 19 subnets, 6 masks
+! O IA    172.16.0.0/22 [110/51] via 172.16.8.98, GigabitEthernet0/1 (Main Guest Wi-Fi)
+! O IA    172.16.4.0/23 [110/51] via 172.16.8.98, GigabitEthernet0/1 (Main Admin)
+! O IA    172.16.6.0/25 [110/51] via 172.16.8.98, GigabitEthernet0/1 (Main VoIP)
+! C       172.16.6.128/25 is directly connected, Vlan40
+! L       172.16.6.129/32 is directly connected, Vlan40
+! O IA    172.16.7.0/26 [110/51] via 172.16.8.98, GigabitEthernet0/1 (Main Server Farm)
+! O IA    172.16.7.64/26 [110/51] via 172.16.8.98, GigabitEthernet0/1 (Main Surgery)
+! O IA    172.16.7.128/26 [110/51] via 172.16.8.98, GigabitEthernet0/1 (Main ICU)
+! O IA    172.16.7.192/27 [110/51] via 172.16.8.98, GigabitEthernet0/1 (Main Management)
+! C       172.16.7.224/27 is directly connected, Vlan60
+! L       172.16.7.225/32 is directly connected, Vlan60
+! C       172.16.8.0/27 is directly connected, Vlan30
+! L       172.16.8.1/32 is directly connected, Vlan30
+! C       172.16.8.32/27 is directly connected, Vlan10
+! L       172.16.8.33/32 is directly connected, Vlan10
+! C       172.16.8.64/28 is directly connected, Vlan99
+! L       172.16.8.65/32 is directly connected, Vlan99
+! C       172.16.8.96/30 is directly connected, GigabitEthernet0/1
+! L       172.16.8.97/32 is directly connected, GigabitEthernet0/1
+! C       172.16.8.108/32 is directly connected, Loopback0
 !
-! 6. Clinic Inter-VLAN Ping Verification Commands (execute from privileged exec)
+! 7. Clinic Inter-VLAN Ping Verification Commands (execute from privileged exec)
 ! ------------------------------------------------------------------------------
 ! SW-D3# ping 172.16.8.36              ! Ping SRV-CACHE (Local Clinic EHR Server) -> Success rate 100 percent
 ! SW-D3# ping 172.16.8.42              ! Ping PC-CLINIC-CONSULT1 (VLAN 10 Clinical) -> Success rate 100 percent
 ! SW-D3# ping 172.16.8.10              ! Ping PC-CLINIC-ADM1 (VLAN 30 Admin) -> Success rate 100 percent
 ! SW-D3# ping 172.16.7.234             ! Ping PHONE-CLINIC-601 (VLAN 60 Voice) -> Success rate 100 percent
 ! SW-D3# ping 172.16.8.98              ! Ping Core Router R2 Gig0/0 Transit Link -> Success rate 100 percent
+! SW-D3# ping 172.16.7.4               ! Ping Main Hospital SRV-CENTRAL across WAN -> Success rate 100 percent
 !
-! 7. Architecture Note on Clinic Single Point of Failure (SPOF)
+! 8. Architecture Note on Clinic Single Point of Failure (SPOF)
 ! ------------------------------------------------------------------------------
 ! In this base topology, SW-D3 is the sole distribution switch for the Remote Spoke Clinic.
 ! If SW-D3 fails, all local inter-VLAN routing and uplink WAN connectivity to R2 ceases.

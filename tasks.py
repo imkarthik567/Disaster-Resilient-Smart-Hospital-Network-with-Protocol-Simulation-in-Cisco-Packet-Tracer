@@ -41,7 +41,8 @@ def task_test():
     ok4 = run_command(["tests/test_intervlan_hsrp.py"], "Executing Inter-VLAN & HSRP Gateway Redundancy Tests")
     ok5 = run_command(["tests/test_server_setup.py"], "Executing Server Farm, DHCP & DNS Services Tests")
     ok6 = run_command(["tests/test_routing_design.py"], "Executing Dynamic Routing Design & Model Tests")
-    return ok1 and ok2 and ok3 and ok4 and ok5 and ok6
+    ok7 = run_command(["tests/test_routing_configs.py"], "Executing Dynamic Routing Configurations & Expected State Tests")
+    return ok1 and ok2 and ok3 and ok4 and ok5 and ok6 and ok7
 
 def task_lint():
     ok1 = run_command(["verification/check_topology.py"], "Validating Topology & Interconnect Cable Matrix")
