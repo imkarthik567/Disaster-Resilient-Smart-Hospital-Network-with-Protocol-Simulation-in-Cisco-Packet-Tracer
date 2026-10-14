@@ -25,20 +25,16 @@ banner motd ^C
 ================================================================================
 ^C
 
-! --- Management Authentication & Local Accounts ---
+! --- Management Authentication & Credential Encryption ---
 enable secret class123
+service password-encryption
 username admin privilege 15 secret class123
 
-! --- SSH Cryptographic Key Generation & VTY Security ---
+! --- Cryptographic SSH Version 2 Configuration ---
 crypto key generate rsa modulus 1024
 ip ssh version 2
-
-line con 0
- password cisco
- login
- logging synchronous
- exec-timeout 15 0
-exit
+ip ssh time-out 60
+ip ssh authentication-retries 3
 
 ! --- Infrastructure Hardening: Standard ACL for VTY Management ---
 ip access-list standard ACL-VTY-SSH
@@ -48,6 +44,13 @@ ip access-list standard ACL-VTY-SSH
  permit host 172.16.8.75
  remark Deny all other administrative attempts with logging
  deny any log
+exit
+
+line con 0
+ password cisco
+ login
+ logging synchronous
+ exec-timeout 15 0
 exit
 
 line vty 0 4
@@ -63,6 +66,18 @@ line vty 5 15
  access-class ACL-VTY-SSH in
  exec-timeout 15 0
 exit
+
+! --- Disable Insecure / Unnecessary Management Services ---
+no ip http server
+no ip http secure-server
+
+! --- Centralized Time Synchronization (NTP Client) ---
+ntp server 172.16.7.4
+
+! --- Centralized Logging (Syslog Client) ---
+logging host 172.16.7.4
+logging trap informational
+logging buffered 4096 informational
 
 ! --- Enable Hardware Layer-3 IP Routing ---
 ip routing

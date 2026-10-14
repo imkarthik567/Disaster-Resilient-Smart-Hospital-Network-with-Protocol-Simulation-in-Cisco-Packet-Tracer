@@ -1,104 +1,176 @@
 ! ==============================================================================
-! DEVICE:       SW-A5 (Remote Clinic - General Access Switch)
-! MODEL:        Cisco Catalyst 2960-24TT
-! LAYER:        Access Layer (Remote Clinic Campus)
-! UPLINK:       FastEthernet0/24 -> SW-D3 FastEthernet0/1 (802.1Q Trunk)
-! MANAGEMENT:   VLAN 99 | IP: 172.16.4.178/28 | Gateway: 172.16.4.177
+! DEVICE:       SW-A5
+! MODEL:        Cisco Catalyst 2960-24TT (Layer-2 Access Switch)
+! LOCATION:     Remote Spoke Clinic - Telecomm Equipment Closet
+! ROLE:         Access Layer Switch - All Outpatient Clinical, Admin, Voice & Guest
+! UPLINKS:      Gig0/1 -> SW-D3 Fa0/23 (Primary Trunk), Gig0/2 -> SW-D3 Fa0/24 (Secondary Trunk)
+! DOWNLINKS:    Fa0/1 - 3 (Consultation & Triage PCs), Fa0/4 - 6 (Admin & Pharmacy PCs),
+!               Fa0/7 - 9 (VoIP Phones), Fa0/10 (Guest AP), Fa0/20 (Clinic Admin PC)
 ! ==============================================================================
 
 enable
 configure terminal
 
+! --- Device Identity & System Security ---
 hostname SW-A5
-
-! --- Disable DNS Lookup & Set Banner ---
 no ip domain-lookup
+ip domain-name hospital.local
+
 banner motd ^C
-====================================================================
-  SW-A5: Remote Clinic Access Switch - VIT SCOPE CN Project
-  Unauthorized access is strictly prohibited!
-====================================================================
+================================================================================
+  SW-A5 : Remote Spoke Clinic Unified Layer-2 Access Switch
+  VIT Vellore - CN Project: Disaster-Resilient Smart Hospital Network
+  UNAUTHORIZED ACCESS IS STRICTLY PROHIBITED. ALL SESSIONS MONITORED.
+================================================================================
 ^C
 
-! --- Management Credentials & Line Security ---
-enable secret class
+! --- Management Authentication & Credential Encryption ---
+enable secret class123
+service password-encryption
+username admin privilege 15 secret class123
+
+! --- Cryptographic SSH Version 2 Configuration ---
+crypto key generate rsa modulus 1024
+ip ssh version 2
+ip ssh time-out 60
+ip ssh authentication-retries 3
+
+! --- Infrastructure Hardening: Standard ACL for VTY Management ---
+ip access-list standard ACL-VTY-SSH
+ remark Permit Central Hospital NOC Management Console
+ permit host 172.16.7.212
+ remark Permit Remote Clinic Local Management Station
+ permit host 172.16.8.75
+ remark Deny all other administrative attempts with logging
+ deny any log
+exit
+
 line con 0
  password cisco
  login
  logging synchronous
  exec-timeout 15 0
+exit
+
 line vty 0 4
- password cisco
- login
- transport input ssh telnet
+ login local
+ transport input ssh
+ access-class ACL-VTY-SSH in
  exec-timeout 15 0
 exit
 
+line vty 5 15
+ login local
+ transport input ssh
+ access-class ACL-VTY-SSH in
+ exec-timeout 15 0
+exit
+
+! --- Disable Insecure / Unnecessary Management Services ---
+no ip http server
+no ip http secure-server
+
+! --- Centralized Time Synchronization (NTP Client) ---
+ntp server 172.16.7.4
+
+! --- Centralized Logging (Syslog Client) ---
+logging host 172.16.7.4
+logging trap informational
+logging buffered 4096 informational
+
 ! --- VLAN Database Definition ---
 vlan 10
- name Remote_Clinical
+ name Clinic_Clinical
 vlan 30
- name Remote_Admin
-vlan 50
- name Remote_Server_Cache
+ name Clinic_Admin
+vlan 40
+ name Clinic_Guest
 vlan 60
- name Remote_VoIP
+ name Clinic_Voice
 vlan 99
  name Management
 vlan 999
  name Parking_Native
 exit
 
-! --- Trunk Uplink Configuration to SW-D3 ---
-interface FastEthernet0/24
- description Trunk_Uplink_to_SW-D3_Fa0/1
+! --- Spanning Tree Protocol: Rapid PVST+ ---
+spanning-tree mode rapid-pvst
+
+! --- 802.1Q Redundant Trunk Uplinks to Distribution Switch SW-D3 ---
+! Allowed VLANs strictly limited to all Clinic traffic: 10, 30, 40, 60, 99.
+! DTP disabled via 'switchport nonegotiate'.
+
+! Primary Uplink to SW-D3 (Active Forwarding Trunk)
+interface GigabitEthernet0/1
+ description Primary_Trunk_Uplink_to_SW-D3_Fa0/23
  switchport mode trunk
  switchport trunk native vlan 999
- switchport trunk allowed vlan 10,30,50,60,99
+ switchport trunk allowed vlan 10,30,40,60,99
+ switchport nonegotiate
  no shutdown
 exit
 
-! --- Host Access Ports: Remote Clinical Monitoring & Telemetry (VLAN 10) ---
-interface range FastEthernet0/1 - 8
- description Clinic_Patient_Monitors_and_Telemetry
+! Secondary Uplink to SW-D3 (RSTP Alternate/Blocking Trunk)
+interface GigabitEthernet0/2
+ description Redundant_Trunk_Uplink_to_SW-D3_Fa0/24
+ switchport mode trunk
+ switchport trunk native vlan 999
+ switchport trunk allowed vlan 10,30,40,60,99
+ switchport nonegotiate
+ no shutdown
+exit
+
+! --- Host-Facing Ports: Outpatient Clinical Consultation & Triage ---
+interface range FastEthernet0/1 - 3
  switchport mode access
  switchport access vlan 10
  spanning-tree portfast
  spanning-tree bpduguard enable
- switchport port-security
- switchport port-security maximum 2
- switchport port-security violation restrict
- switchport port-security mac-address sticky
  no shutdown
 exit
 
-! --- Host Access Ports: Remote Clinic Admin Workstations (VLAN 30) ---
-interface range FastEthernet0/9 - 14
- description Clinic_Admin_Staff_PCs
+interface FastEthernet0/1
+ description Clinic_Consultation_Room_1_Workstation_(PC-CLINIC-CONSULT1)
+exit
+
+interface FastEthernet0/2
+ description Clinic_Consultation_Room_2_Workstation_(PC-CLINIC-CONSULT2)
+exit
+
+interface FastEthernet0/3
+ description Clinic_Emergency_Triage_Workstation_(PC-CLINIC-TRIAGE)
+exit
+
+! --- Host-Facing Ports: Clinic Administration, Billing & Pharmacy ---
+! Security: PortFast, BPDU Guard, Max 2 MACs, sticky learning, VIOLATION SHUTDOWN
+interface range FastEthernet0/4 - 6
  switchport mode access
  switchport access vlan 30
  spanning-tree portfast
  spanning-tree bpduguard enable
  switchport port-security
  switchport port-security maximum 2
- switchport port-security violation restrict
  switchport port-security mac-address sticky
+ switchport port-security violation shutdown
  no shutdown
 exit
 
-! --- Host Access Ports: Remote Local Cache Server (VLAN 50) ---
-interface range FastEthernet0/15 - 18
- description Clinic_Local_Cache_Servers
- switchport mode access
- switchport access vlan 50
- spanning-tree portfast
- spanning-tree bpduguard enable
- no shutdown
+interface FastEthernet0/4
+ description Clinic_Reception_and_Patient_CheckIn_(PC-CLINIC-ADM1)
 exit
 
-! --- Voice Ports: Clinic VoIP Phones (VLAN 30 Data, VLAN 60 Voice) ---
-interface range FastEthernet0/19 - 22
- description Clinic_VoIP_Phones
+interface FastEthernet0/5
+ description Clinic_Billing_and_Insurance_Terminal_(PC-CLINIC-ADM2)
+exit
+
+interface FastEthernet0/6
+ description Clinic_Pharmacy_Dispensing_Terminal_(PC-CLINIC-PHARM)
+exit
+
+! --- Host-Facing Ports: Cisco 7960 VoIP IP Phones ---
+! Voice VLAN 60 tagged with 802.1p CoS 5, PC data untagged
+interface FastEthernet0/7
+ description Clinic_Reception_VoIP_Phone_(PHONE-CLINIC-601)
  switchport mode access
  switchport access vlan 30
  switchport voice vlan 60
@@ -107,55 +179,124 @@ interface range FastEthernet0/19 - 22
  no shutdown
 exit
 
-! --- Unused Host Ports: Disabled into Parking VLAN 999 ---
-interface FastEthernet0/23, GigabitEthernet0/1 - 2
- description Unused_Ports_Secured
+interface FastEthernet0/8
+ description Clinic_Doctor_Desk_VoIP_Phone_(PHONE-CLINIC-602)
+ switchport mode access
+ switchport access vlan 10
+ switchport voice vlan 60
+ spanning-tree portfast
+ spanning-tree bpduguard enable
+ no shutdown
+exit
+
+interface FastEthernet0/9
+ description Clinic_Triage_Desk_VoIP_Phone_(PHONE-CLINIC-603)
+ switchport mode access
+ switchport access vlan 10
+ switchport voice vlan 60
+ spanning-tree portfast
+ spanning-tree bpduguard enable
+ no shutdown
+exit
+
+! --- Host-Facing Port: Clinic Guest Wi-Fi Access Point (AP-CLINIC-GUEST) ---
+interface FastEthernet0/10
+ description Clinic_Guest_WiFi_Access_Point_Uplink_(AP-CLINIC-GUEST)
+ switchport mode access
+ switchport access vlan 40
+ spanning-tree portfast
+ spanning-tree bpduguard enable
+ no cdp enable
+ no shutdown
+exit
+
+! --- Local Clinic System Administrator Management Console (VLAN 99) ---
+interface FastEthernet0/20
+ description Clinic_Local_System_Administrator_Console_(PC-CLINIC-MGT)
+ switchport mode access
+ switchport access vlan 99
+ spanning-tree portfast
+ spanning-tree bpduguard enable
+ switchport port-security
+ switchport port-security maximum 2
+ switchport port-security mac-address sticky
+ switchport port-security violation shutdown
+ no shutdown
+exit
+
+! --- In-Band Management SVI (VLAN 99 - Subnet: 172.16.8.64/28) ---
+interface Vlan99
+ description In_Band_Management_SVI_SW-A5
+ ip address 172.16.8.74 255.255.255.240
+ no shutdown
+exit
+
+! Default Gateway pointing to SW-D3 SVI (.65)
+ip default-gateway 172.16.8.65
+
+! --- Security: Shutdown & Park All Unused Physical Interfaces in VLAN 999 ---
+interface range FastEthernet0/11 - 19, FastEthernet0/21 - 24
+ description Security_Unused_Port_Parked_in_VLAN999
  switchport mode access
  switchport access vlan 999
  shutdown
 exit
 
-! --- Management SVI (VLAN 99) ---
-interface Vlan99
- description In_Band_Management_SVI
- ip address 172.16.4.178 255.255.255.240
- no shutdown
-exit
-
-ip default-gateway 172.16.4.177
-
-! --- Spanning Tree Edge Tuning ---
-spanning-tree mode pvst
-spanning-tree portfast default
-spanning-tree portfast bpduguard default
-
 end
 write memory
 
 ! ==============================================================================
-! VERIFICATION COMMANDS & EXPECTED OUTPUT
+! VERIFICATION COMMANDS & EXPECTED OUTPUT (Cisco Packet Tracer 8.x)
 ! ==============================================================================
 !
-! 1. Verify VLAN Database:
-!    SW-A5# show vlan brief
-!    EXPECTED OUTPUT:
-!    10   Remote_Clinical                  active    Fa0/1..Fa0/8
-!    30   Remote_Admin                     active    Fa0/9..Fa0/14, Fa0/19..Fa0/22
-!    50   Remote_Server_Cache              active    Fa0/15..Fa0/18
-!    60   Remote_VoIP                      active    (Voice on Fa0/19..Fa0/22)
-!    99   Management                       active    
-!    999  Parking_Native                   active    Fa0/23, Gi0/1..Gi0/2
+! 1. show vlan brief
+! ------------------------------------------------------------------------------
+! SW-A5# show vlan brief
+! VLAN Name                             Status    Ports
+! ---- -------------------------------- --------- -------------------------------
+! 1    default                          active    
+! 10   Clinic_Clinical                  active    Fa0/1, Fa0/2, Fa0/3, Fa0/8, Fa0/9
+! 30   Clinic_Admin                     active    Fa0/4, Fa0/5, Fa0/6, Fa0/7
+! 40   Clinic_Guest                     active    Fa0/10
+! 60   Clinic_Voice                     active    Fa0/7, Fa0/8, Fa0/9
+! 99   Management                       active    Fa0/20
+! 999  Parking_Native                   active    Fa0/11, Fa0/12, Fa0/13, Fa0/14,
+!                                                 Fa0/15, Fa0/16, Fa0/17, Fa0/18,
+!                                                 Fa0/19, Fa0/21, Fa0/22, Fa0/23,
+!                                                 Fa0/24
 !
-! 2. Verify Trunk Link:
-!    SW-A5# show interfaces trunk
-!    EXPECTED OUTPUT:
-!    Port        Mode             Encapsulation  Status        Native vlan
-!    Fa0/24      on               802.1q         trunking      999
-!    Port        Vlans allowed on trunk
-!    Fa0/24      10,30,50,60,99
+! 2. show interfaces trunk
+! ------------------------------------------------------------------------------
+! SW-A5# show interfaces trunk
+! Port        Mode         Encapsulation  Status        Native vlan
+! Gi0/1       on           802.1q         trunking      999
+! Gi0/2       on           802.1q         trunking      999
 !
-! 3. Verify Management Gateway Reachability:
-!    SW-A5# ping 172.16.4.177
-!    EXPECTED OUTPUT:
-!    Success rate is 100 percent (5/5)
+! Port        Vlans allowed on trunk
+! Gi0/1       10,30,40,60,99
+! Gi0/2       10,30,40,60,99
+!
+! 3. show spanning-tree summary
+! ------------------------------------------------------------------------------
+! SW-A5# show spanning-tree summary
+! Switch is in rapid-pvst mode
+! Root bridge for: none
+! Extended system ID is enabled
+!
+! 4. show port-security
+! ------------------------------------------------------------------------------
+! SW-A5# show port-security
+! Secure Port  MaxSecureAddr  CurrentAddr  SecurityViolation  Security Action
+!                (Count)       (Count)          (Count)
+! ---------------------------------------------------------------------------
+! Fa0/4              2             1                0             Shutdown
+! Fa0/5              2             1                0             Shutdown
+! Fa0/6              2             1                0             Shutdown
+! Fa0/20             2             1                0             Shutdown
+! ---------------------------------------------------------------------------
+!
+! 5. show ip interface brief | include Vlan
+! ------------------------------------------------------------------------------
+! SW-A5# show ip interface brief | include Vlan
+! Vlan99                 172.16.8.74     YES manual up                    up
 ! ==============================================================================

@@ -24,6 +24,9 @@ RULES = [
     {"id": "RULE-04", "name": "Console Line Security", "pattern": r"line con 0", "desc": "Console line must be secured"},
     {"id": "RULE-05", "name": "VTY Line Security", "pattern": r"line vty 0", "desc": "Telnet/SSH VTY lines must be secured"},
     {"id": "RULE-06", "name": "Verification Section Included", "pattern": r"VERIFICATION COMMANDS", "desc": "Must include show commands and expected output (Rule 2)"},
+    {"id": "RULE-07", "name": "Service Password Encryption", "pattern": r"service password-encryption", "desc": "Local passwords must be encrypted with service password-encryption"},
+    {"id": "RULE-08", "name": "SSH Version 2", "pattern": r"ip ssh version 2", "desc": "SSH Version 2 must be configured for remote management"},
+    {"id": "RULE-09", "name": "Exec Timeout Configured", "pattern": r"exec-timeout", "desc": "Line inactivity timeout must be configured"},
 ]
 
 SWITCH_RULES = [
