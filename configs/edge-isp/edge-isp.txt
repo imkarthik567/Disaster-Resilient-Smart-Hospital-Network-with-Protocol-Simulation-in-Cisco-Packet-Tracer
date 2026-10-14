@@ -56,6 +56,16 @@ interface Loopback1
  no shutdown
 exit
 
+! --- Simulated Public External Web Server (RFC 5737 TEST-NET-3) ---
+interface Loopback2
+ description Public_External_Web_Server_www.public-health.org
+ ip address 203.0.113.80 255.255.255.240
+ no shutdown
+exit
+
+! --- Enable HTTP Server on ISP Router for External Web Browsing Verification ---
+ip http server
+
 ! --- Static Return Route to Hospital Address Space (Behind R1 PAT) ---
 ip route 172.16.0.0 255.255.0.0 172.16.8.102
 
@@ -66,16 +76,27 @@ write memory
 ! VERIFICATION COMMANDS & EXPECTED OUTPUT
 ! ==============================================================================
 !
-! 1. Verify Connected Links & Loopbacks:
+! 1. Verify Connected Links & Simulated External Services:
 !    EDGE-ISP# show ip interface brief
 !    EXPECTED OUTPUT:
 !    Interface              IP-Address      OK? Method Status                Protocol
 !    GigabitEthernet0/0     172.16.8.101    YES manual up                    up      
 !    Loopback0              8.8.8.8         YES manual up                    up      
 !    Loopback1              1.1.1.1         YES manual up                    up      
+!    Loopback2              203.0.113.80    YES manual up                    up      
 !
-! 2. Test Reachability to R1 Public IP:
+! 2. Test Reachability to Main Hospital Public Edge Gateway (R1):
 !    EDGE-ISP# ping 172.16.8.102
 !    EXPECTED OUTPUT:
-!    Success rate is 100 percent (5/5)
+!    Type escape sequence to abort.
+!    Sending 5, 100-byte ICMP Echos to 172.16.8.102, timeout is 2 seconds:
+!    !!!!!
+!    Success rate is 100 percent (5/5), round-trip min/avg/max = 1/2/4 ms
+!
+! 3. Test Inbound Public Access to Hospital Published EHR Portal (Static NAT Port-Forward):
+!    (From simulated external client or browser targeting R1 outside IP):
+!    EDGE-ISP# telnet 172.16.8.102 80
+!    EXPECTED OUTPUT:
+!    Trying 172.16.8.102, 80 ... Open
+!    (HTTP session successfully translated by R1 to inside server SRV-CENTRAL 172.16.7.4:80)
 ! ==============================================================================
