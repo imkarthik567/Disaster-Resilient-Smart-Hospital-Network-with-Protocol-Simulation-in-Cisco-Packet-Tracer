@@ -49,7 +49,8 @@ def task_test():
     ok12 = run_command(["tests/test_qos_design.py"], "Executing Quality of Service (QoS) Architecture & Design Tests")
     ok13 = run_command(["tests/test_sbc_environment.py"], "Executing SBC-PT Python Environment & Diagnostic Probe Tests")
     ok14 = run_command(["tests/test_errdetect_lib.py"], "Executing Error Detection & Correction Library Tests")
-    return ok1 and ok2 and ok3 and ok4 and ok5 and ok6 and ok7 and ok8 and ok9 and ok10 and ok11 and ok12 and ok13 and ok14
+    ok15 = run_command(["tests/test_arq_protocols.py"], "Executing Sliding-Window ARQ Protocol & Adapter Tests")
+    return ok1 and ok2 and ok3 and ok4 and ok5 and ok6 and ok7 and ok8 and ok9 and ok10 and ok11 and ok12 and ok13 and ok14 and ok15
 
 def task_lint():
     ok1 = run_command(["verification/check_topology.py"], "Validating Topology & Interconnect Cable Matrix")
