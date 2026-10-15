@@ -25,6 +25,7 @@ Supports:
 import os
 import sys
 import re
+import csv
 import json
 import argparse
 from typing import Dict, Any, List, Optional, Tuple
@@ -173,6 +174,7 @@ def format_report(result: Dict[str, Any], scenario: Optional[str] = None, config
 
 def main():
     parser = argparse.ArgumentParser(description="Parse raw ping logs to quantify packet loss and convergence time.")
+    parser.add_argument("--text", "-t", help="Raw ping output as an inline string")
     parser.add_argument("--file", "-f", help="Path to text file containing raw ping output")
     parser.add_argument("--interval", "-i", type=float, default=1.0, help="Ping interval in seconds (default 1.0s)")
     parser.add_argument("--scenario", "-s", help="Optional scenario name/ID (e.g. SC-01 Primary WAN Cut)")
@@ -181,9 +183,12 @@ def main():
     parser.add_argument("--route-before", default="Normal", help="Active route before failure")
     parser.add_argument("--route-after", default="Failover", help="Active route after convergence")
     parser.add_argument("--notes", default="", help="Optional notes on the run")
+    parser.add_argument("--json", "-j", action="store_true", help="Output results in JSON format")
     args = parser.parse_args()
 
-    if args.file:
+    if args.text:
+        raw_text = args.text
+    elif args.file:
         if not os.path.exists(args.file):
             print(f"[ERROR] File not found: {args.file}", file=sys.stderr)
             sys.exit(1)

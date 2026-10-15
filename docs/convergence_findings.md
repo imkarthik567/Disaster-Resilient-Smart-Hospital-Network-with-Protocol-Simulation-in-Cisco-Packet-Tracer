@@ -23,17 +23,17 @@
 
 | Scenario ID | Configuration Mode | Protocol | Reps (N) | Mean Outage (s) | Std Dev (s) | Min (s) | Max (s) | 95% Confidence Interval | Clinical SLA Status |
 | :--- | :--- | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| **SC-01** | Config A: Default OSPF | OSPFv2 | 10 | **1.60 s** | 0.52 s | 1.00 s | 2.00 s | ± 0.37 s | **ACCEPTABLE** |
-| **SC-01** | Config B: Tuned Fast OSPF | OSPFv2 | 10 | **0.70 s** | 0.48 s | 0.00 s | 1.00 s | ± 0.35 s | **ACCEPTABLE** |
-| **SC-01** | Config C: EIGRP Backup | EIGRP | 10 | **0.50 s** | 0.53 s | 0.00 s | 1.00 s | ± 0.38 s | **ACCEPTABLE** |
-| **SC-02** | Config A: Default OSPF | OSPFv2 | 10 | **0.00 s** | 0.00 s | 0.00 s | 0.00 s | ± 0.00 s | **ACCEPTABLE** |
-| **SC-03** | Config A: Default OSPF | OSPFv2 | 10 | **8.20 s** | 0.63 s | 7.00 s | 9.00 s | ± 0.45 s | **DEGRADED** |
-| **SC-03** | Config B: Tuned Fast OSPF | OSPFv2 | 10 | **2.70 s** | 0.48 s | 2.00 s | 3.00 s | ± 0.35 s | **ACCEPTABLE** |
-| **SC-03** | Config C: EIGRP Backup | EIGRP | 10 | **3.70 s** | 0.48 s | 3.00 s | 4.00 s | ± 0.35 s | **DEGRADED** |
-| **SC-04** | Config A: Default OSPF | OSPFv2 | 10 | **0.70 s** | 0.48 s | 0.00 s | 1.00 s | ± 0.35 s | **ACCEPTABLE** |
-| **SC-05** | Default HSRP Timers | HSRP/RSTP | 10 | **10.60 s** | 0.52 s | 10.00 s | 11.00 s | ± 0.37 s | **DEGRADED** |
-| **SC-05** | Tuned Fast HSRP (msec) | HSRP/RSTP | 10 | **0.80 s** | 0.42 s | 0.00 s | 1.00 s | ± 0.30 s | **ACCEPTABLE** |
-| **SC-06** | HA Dual-Dist Switch | OSPF/HSRP | 10 | **1.30 s** | 0.48 s | 1.00 s | 2.00 s | ± 0.35 s | **ACCEPTABLE** |
+| **SC-01** | Config A: Default OSPF | OSPFv2 | 10 | **1.60 s** | 0.52 s | 1.00 s | 2.00 s | +/- 0.37 s | **ACCEPTABLE** |
+| **SC-01** | Config B: Tuned Fast OSPF | OSPFv2 | 10 | **0.70 s** | 0.48 s | 0.00 s | 1.00 s | +/- 0.35 s | **ACCEPTABLE** |
+| **SC-01** | Config C: EIGRP Backup | EIGRP | 10 | **0.50 s** | 0.53 s | 0.00 s | 1.00 s | +/- 0.38 s | **ACCEPTABLE** |
+| **SC-02** | Config A: Default OSPF | OSPFv2 | 10 | **0.00 s** | 0.00 s | 0.00 s | 0.00 s | +/- 0.00 s | **ACCEPTABLE** |
+| **SC-03** | Config A: Default OSPF | OSPFv2 | 10 | **8.20 s** | 0.63 s | 7.00 s | 9.00 s | +/- 0.45 s | **DEGRADED** |
+| **SC-03** | Config B: Tuned Fast OSPF | OSPFv2 | 10 | **2.70 s** | 0.48 s | 2.00 s | 3.00 s | +/- 0.35 s | **ACCEPTABLE** |
+| **SC-03** | Config C: EIGRP Backup | EIGRP | 10 | **3.70 s** | 0.48 s | 3.00 s | 4.00 s | +/- 0.35 s | **DEGRADED** |
+| **SC-04** | Config A: Default OSPF | OSPFv2 | 10 | **0.70 s** | 0.48 s | 0.00 s | 1.00 s | +/- 0.35 s | **ACCEPTABLE** |
+| **SC-05** | Default HSRP Timers | HSRP/RSTP | 10 | **10.60 s** | 0.52 s | 10.00 s | 11.00 s | +/- 0.37 s | **DEGRADED** |
+| **SC-05** | Tuned Fast HSRP (msec) | HSRP/RSTP | 10 | **0.80 s** | 0.42 s | 0.00 s | 1.00 s | +/- 0.30 s | **ACCEPTABLE** |
+| **SC-06** | HA Dual-Dist Switch | OSPF/HSRP | 10 | **1.30 s** | 0.48 s | 1.00 s | 2.00 s | +/- 0.35 s | **ACCEPTABLE** |
 
 ---
 

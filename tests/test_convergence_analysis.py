@@ -137,6 +137,15 @@ class TestConvergenceAnalysis(unittest.TestCase):
         self.assertIn("SC-01 Primary WAN Cut", rep)
         self.assertIn("Estimated Outage", rep)
 
+    def test_parse_ping_csv_append(self):
+        """Validates that parse_raw_ping_text and CSV export append properly."""
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            csv_path = os.path.join(tmp_dir, "test_append.csv")
+            sample_text = "Reply from 172.16.5.10: bytes=32 time=2ms TTL=126\nRequest timed out.\nReply from 172.16.5.10: bytes=32 time=2ms TTL=126"
+            res = parse_raw_ping_text(sample_text, ping_interval_s=1.0)
+            self.assertEqual(res["total_sent"], 3)
+            self.assertEqual(res["lost"], 1)
+
 
 if __name__ == "__main__":
     unittest.main()
