@@ -136,25 +136,64 @@ class ConvergenceAnalyzer:
             self.load_trials()
 
     def load_trials(self):
-        """Loads and processes multi-trial repetition data."""
+        """Loads and processes multi-trial repetition data with flexible column mapping."""
         self.trials.clear()
         with open(self.trials_csv, "r", encoding="utf-8") as f:
             reader = csv.DictReader(f)
             for row in reader:
+                # Flexible column extraction
+                scen_id = row.get("scenario_id") or row.get("scenario") or row.get("scenario_name") or "SC-XX"
+                scen_name = row.get("scenario_name") or row.get("scenario") or scen_id
+                config = row.get("configuration") or row.get("config") or row.get("config_name") or "Default"
+                proto = row.get("protocol") or row.get("proto") or "ICMP"
+                
+                trial_num = int(row.get("trial_num") or row.get("trial") or 1)
+                sent = int(row.get("total_pings_sent") or row.get("pings_sent") or row.get("sent") or 50)
+                lost = int(row.get("pings_lost") or row.get("lost") or row.get("drops") or 0)
+                interval = float(row.get("ping_interval_s") or row.get("interval") or 1.0)
+                
+                # Outage duration fallback to lost * interval if not explicitly provided
+                if "outage_duration_s" in row and row["outage_duration_s"].strip():
+                    outage_s = float(row["outage_duration_s"])
+                elif "outage" in row and row["outage"].strip():
+                    outage_s = float(row["outage"])
+                else:
+                    outage_s = lost * interval
+
+                route_pre = row.get("route_before") or "Normal"
+                route_post = row.get("route_after") or "Failover"
+
                 self.trials.append({
-                    "scenario_id": row["scenario_id"].strip(),
-                    "scenario_name": row["scenario_name"].strip(),
-                    "configuration": row["configuration"].strip(),
-                    "protocol": row["protocol"].strip(),
-                    "trial_num": int(row["trial_num"]),
-                    "pings_sent": int(row["total_pings_sent"]),
-                    "pings_lost": int(row["pings_lost"]),
-                    "ping_interval_s": float(row["ping_interval_s"]),
-                    "outage_duration_s": float(row["outage_duration_s"]),
-                    "route_before": row["route_before"].strip(),
-                    "route_after": row["route_after"].strip(),
+                    "scenario_id": scen_id.strip(),
+                    "scenario_name": scen_name.strip(),
+                    "configuration": config.strip(),
+                    "protocol": proto.strip(),
+                    "trial_num": trial_num,
+                    "pings_sent": sent,
+                    "pings_lost": lost,
+                    "ping_interval_s": interval,
+                    "outage_duration_s": outage_s,
+                    "route_before": route_pre.strip(),
+                    "route_after": route_post.strip(),
                 })
         self._compute_trial_statistics()
+
+    def get_markdown_table(self) -> str:
+        """Returns standalone markdown summary table of failover convergence statistics."""
+        if not self.trial_stats:
+            self._compute_trial_statistics()
+
+        lines = []
+        lines.append("| Scenario ID | Scenario Name | Configuration Mode | Protocol | Reps (N) | Mean Outage (s) | Std Dev (s) | Min (s) | Max (s) | 95% Confidence Interval | Clinical SLA Status |")
+        lines.append("| :--- | :--- | :--- | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: |")
+        for s in self.trial_stats:
+            ci_str = f"+/- {s['ci_95_s']:.2f} s"
+            lines.append(
+                f"| **{s['scenario_id']}** | {s['scenario_name']} | {s['configuration']} | {s['protocol']} | {s['trial_count']} | "
+                f"**{s['mean_outage_s']:.2f} s** | {s['std_dev_s']:.2f} s | {s['min_outage_s']:.2f} s | "
+                f"{s['max_outage_s']:.2f} s | {ci_str} | **{s['sla_status']}** |"
+            )
+        return "\n".join(lines)
 
     def _compute_trial_statistics(self):
         """Aggregates repeated trials into statistical metrics with 95% CI."""
@@ -386,7 +425,7 @@ class ConvergenceAnalyzer:
             md.append("| Scenario ID | Configuration Mode | Protocol | Reps (N) | Mean Outage (s) | Std Dev (s) | Min (s) | Max (s) | 95% Confidence Interval | Clinical SLA Status |")
             md.append("| :--- | :--- | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: |")
             for s in self.trial_stats:
-                ci_str = f"± {s['ci_95_s']:.2f} s"
+                ci_str = f"+/- {s['ci_95_s']:.2f} s"
                 md.append(
                     f"| **{s['scenario_id']}** | {s['configuration']} | {s['protocol']} | {s['trial_count']} | "
                     f"**{s['mean_outage_s']:.2f} s** | {s['std_dev_s']:.2f} s | {s['min_outage_s']:.2f} s | "
@@ -461,6 +500,8 @@ def main():
     parser.add_argument("--trials", "-t", default=DEFAULT_TRIALS_CSV, help="Path to multi-trial repetition CSV")
     parser.add_argument("--charts-dir", "-c", default=RESULTS_CHARTS_DIR, help="Path to charts output directory")
     parser.add_argument("--output-doc", "-o", default=FINDINGS_DOC, help="Path to markdown findings output")
+    parser.add_argument("--table", action="store_true", help="Print summary markdown table directly to console")
+    parser.add_argument("--table-out", help="Save summary markdown table to a separate file")
     args = parser.parse_args()
 
     analyzer = ConvergenceAnalyzer(
@@ -469,6 +510,19 @@ def main():
         charts_dir=args.charts_dir,
         output_doc=args.output_doc
     )
+
+    if args.table or args.table_out:
+        analyzer.load_data()
+        table_md = analyzer.get_markdown_table()
+        if args.table:
+            print(table_md)
+        if args.table_out:
+            os.makedirs(os.path.dirname(os.path.abspath(args.table_out)), exist_ok=True)
+            with open(args.table_out, "w", encoding="utf-8") as f:
+                f.write(table_md)
+            print(f"[SUCCESS] Saved markdown table to {args.table_out}")
+        return
+
     analyzer.run()
 
 

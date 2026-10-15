@@ -177,7 +177,10 @@ def main():
     parser.add_argument("--interval", "-i", type=float, default=1.0, help="Ping interval in seconds (default 1.0s)")
     parser.add_argument("--scenario", "-s", help="Optional scenario name/ID (e.g. SC-01 Primary WAN Cut)")
     parser.add_argument("--config", "-c", help="Optional protocol configuration (e.g. Tuned OSPF)")
-    parser.add_argument("--json", "-j", action="store_true", help="Output results in JSON format")
+    parser.add_argument("--append", "-a", help="Path to results CSV file to append this trial record to")
+    parser.add_argument("--route-before", default="Normal", help="Active route before failure")
+    parser.add_argument("--route-after", default="Failover", help="Active route after convergence")
+    parser.add_argument("--notes", default="", help="Optional notes on the run")
     args = parser.parse_args()
 
     if args.file:
@@ -203,6 +206,34 @@ def main():
             print(json.dumps(res, indent=2))
         else:
             print(format_report(res, scenario=args.scenario, config=args.config))
+
+        if args.append:
+            file_exists = os.path.exists(args.append)
+            with open(args.append, "a", newline="", encoding="utf-8") as csvfile:
+                fieldnames = [
+                    "scenario_id", "scenario_name", "configuration", "protocol",
+                    "trial_num", "total_pings_sent", "pings_lost", "ping_interval_s",
+                    "outage_duration_s", "route_before", "route_after", "notes"
+                ]
+                writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+                if not file_exists:
+                    writer.writeheader()
+                scen = args.scenario or "SC-XX"
+                writer.writerow({
+                    "scenario_id": scen.split()[0] if " " in scen else scen,
+                    "scenario_name": scen,
+                    "configuration": args.config or "Default",
+                    "protocol": "ICMP",
+                    "trial_num": 1,
+                    "total_pings_sent": res["total_sent"],
+                    "pings_lost": res["lost"],
+                    "ping_interval_s": res["ping_interval_s"],
+                    "outage_duration_s": res["estimated_convergence_outage_s"],
+                    "route_before": args.route_before,
+                    "route_after": args.route_after,
+                    "notes": args.notes
+                })
+            print(f"[SUCCESS] Appended trial result to {args.append}")
     except Exception as e:
         print(f"[ERROR] Failed to parse ping output: {e}", file=sys.stderr)
         sys.exit(1)
