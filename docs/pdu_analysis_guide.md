@@ -1,21 +1,21 @@
 # Disaster-Resilient Smart Hospital Network: PDU Analysis Evidence Pack Plan
-**Document ID:** DOC-PDU-GUIDE-2026-v1.0  
+**Document ID:** DOC-PDU-GUIDE-2026-v2.0  
 **Authors:** Rohit Kathiravan (24BCE0441), Karthikeyan S (24BCT0332)  
 **Institution:** School of Computer Science and Engineering (SCOPE), VIT Vellore  
 **Target Environment:** Cisco Packet Tracer 8.x+ Simulation Mode  
-**Proposal Alignment:** Section 4.2 Protocol Architecture & Cross-Layer Validation
+**Proposal Alignment:** Section 4.2 Protocol Architecture & Cross-Layer Validation  
 
 ---
 
 ## 1. Overview & Simulation Mode Setup Instructions
 
-Packet Tracer Simulation Mode allows deterministic inspection of Protocol Data Units (PDUs) traversing the OSI reference model stack at every physical node. This guide defines the exact capture plan, filter profiles, step-by-step trigger actions, PDU field inspections, screenshot capture checklists, textbook-grade justifications, and figure captions for eleven (11) essential network protocol events.
+Packet Tracer Simulation Mode allows deterministic inspection of Protocol Data Units (PDUs) traversing the OSI reference model stack at every physical node. This guide defines the exact capture plan, event-list filter profiles, step-by-step trigger actions, PDU field inspections, screenshot capture checklists, textbook-grade justifications, and figure captions for eleven (11) essential network protocol events.
 
 ### Global Simulation Mode Setup Checklist:
 1. In the bottom-right corner of Cisco Packet Tracer, toggle from **Realtime** to **Simulation** mode (or press `Shift + S`).
 2. In the Simulation Panel, click **Show None** to deselect all protocol filters.
 3. Click **Edit Filters** and configure only the specific protocol filters indicated for each test case below.
-4. Set the **Play / Capture** speed slider to 1/3 speed to avoid skipping discrete state transitions.
+4. Set the **Play / Capture** speed slider to approximately 1/3 speed to avoid skipping discrete state transitions.
 5. In the Event List, double-click on any PDU envelope to open the **PDU Information Window** displaying both the **OSI Model Tab** (In Layers vs. Out Layers) and the **Inbound/Outbound PDU Details Tab** (raw bitstream header fields).
 
 ---
@@ -24,16 +24,16 @@ Packet Tracer Simulation Mode allows deterministic inspection of Protocol Data U
 
 ### 2.1 Simulation Setup & Filter Configuration
 - **Event List Filters:** `ARP`, `ICMP`.
-- **Pre-Capture Action:** Clear the local ARP caches across the subnet to force resolution:
+- **Pre-Capture Action:** Clear the local ARP caches across the subnet to force dynamic resolution:
   - On `ICU-PC1` command prompt: `arp -d`
-  - On `SW-D1` CLI: `clear arp`
-- **Trigger Command:** On `ICU-PC1` (`172.16.8.40`), ping the active HSRP default gateway VIP (`172.16.8.33`):
+  - On `SW-D1` CLI: `clear arp-cache`
+- **Trigger Command:** On `ICU-PC1` (`172.16.8.40`), initiate communication with the active HSRP default gateway VIP (`172.16.8.33`):
   ```cmd
   ping -n 1 172.16.8.33
   ```
 
-### 2.2 PDU Header Inspection & L2/L3 Hop Transformation Table
-As the PDU moves through the network, the Layer 2 Ethernet II header is rewritten at every single hop, whereas the Layer 3 IP header remains immutable end-to-end:
+### 2.2 Intra-Subnet ARP Resolution Table
+The table below records the dynamic resolution of the default gateway virtual IP within VLAN 10:
 
 | Hop / Segment | Node / Interface | L2 Source MAC | L2 Dest MAC | L3 Source IP | L3 Dest IP | PDU Operation |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
@@ -42,13 +42,24 @@ As the PDU moves through the network, the Layer 2 Ethernet II header is rewritte
 | **Hop 3: Gateway Reply**| `SW-D1:Vlan10` $\rightarrow$ `SW-A1:Gi0/1` | `0000.0C07.AC0A` (HSRP VMAC) | `0001.42AA.1101` (`ICU-PC1`) | `172.16.8.33` | `172.16.8.40` | ARP Reply (`172.16.8.33 is at 0000.0c07.ac0a`) |
 | **Hop 4: Delivery** | `SW-A1:Fa0/1` $\rightarrow$ `ICU-PC1` | `0000.0C07.AC0A` (HSRP VMAC) | `0001.42AA.1101` (`ICU-PC1`) | `172.16.8.33` | `172.16.8.40` | Unicast delivery; Host populates local ARP table |
 
-### 2.3 What This Proves (Textbook Analysis)
-> This capture demonstrates the fundamental separation of concerns between Layer 2 physical addressing and Layer 3 logical internetwork routing. The originating host cannot construct a valid IEEE 802.3 Ethernet frame until it resolves the destination IP address to a physical MAC address via an ARP broadcast ($FF:FF:FF:FF:FF:FF$). Crucially, the capture proves that the default gateway responds with the HSRP virtual MAC address ($0000.0c07.ac0a$) rather than its hardware physical burned-in MAC address (BIA). Consequently, end-hosts bind their default route to a logical virtual entity, enabling transparent downstream hardware failover without requiring host-side ARP cache re-convergence.
+### 2.3 Hop-by-Hop L2 Header Rewrite vs. L3 Invariance Demonstration
+When `ICU-PC1` (`172.16.8.40`) transmits routed data across multiple router hops to Central Server `SRV-CENTRAL` (`172.16.5.10`), the Layer 2 Ethernet header is stripped and rewritten at each router, whereas the Layer 3 IP header remains strictly invariant:
 
-### 2.4 Screenshot Capture Checklist & Caption Template
+| Step / Link Traversed | Device & Interface | Inbound L2 MAC (Src $\rightarrow$ Dst) | Outbound L2 MAC (Src $\rightarrow$ Dst) | L3 IP Header (Src $\rightarrow$ Dst) | Header Invariance Analysis |
+| :---: | :--- | :--- | :--- | :--- | :--- |
+| **Hop 1** | `ICU-PC1` $\rightarrow$ `SW-D1:Vl10` | `0001.42AA.1101` $\rightarrow$ `0000.0C07.AC0A` | N/A (Originating Host) | `172.16.8.40` $\rightarrow$ `172.16.5.10` | L3 IP addresses encapsulated; L2 maps to Gateway VIP |
+| **Hop 2** | `SW-D1` (Route to `R1`) | `0001.42AA.1101` $\rightarrow$ `0000.0C07.AC0A` | `0060.70AA.BB01` $\rightarrow$ `0001.9611.2201` | `172.16.8.40` $\rightarrow$ `172.16.5.10` | L2 rewritten to R1 Gi0/1 MAC; **L3 IP completely unchanged** |
+| **Hop 3** | `R1` (Route to `SW-D2`) | `0060.70AA.BB01` $\rightarrow$ `0001.9611.2201` | `0001.9611.2202` $\rightarrow$ `0060.70AA.BB02` | `172.16.8.40` $\rightarrow$ `172.16.5.10` | L2 rewritten to SW-D2 Gi0/1 MAC; **L3 IP completely unchanged** |
+| **Hop 4** | `SW-D2` $\rightarrow$ `SRV-CENTRAL`| `0001.9611.2202` $\rightarrow$ `0060.70AA.BB02` | `0060.70AA.BB02` $\rightarrow$ `0001.9654.1201` | `172.16.8.40` $\rightarrow$ `172.16.5.10` | L2 rewritten to Server NIC MAC; **L3 IP completely unchanged** |
+
+### 2.4 What This Proves (Textbook Analysis)
+> This capture demonstrates the fundamental architectural separation between Layer 2 physical framing and Layer 3 logical internetwork routing as defined in the ISO/OSI model. The originating host cannot construct a valid IEEE 802.3 Ethernet frame until it resolves the destination IP address to a physical MAC address via an ARP broadcast ($FF:FF:FF:FF:FF:FF$). Crucially, the capture proves that the default gateway responds with the HSRP virtual MAC address ($0000.0c07.ac0a$) rather than its burned-in hardware MAC address (BIA). Furthermore, as the packet traverses intermediate Layer 3 routed hops, the data-link frame headers are stripped and rewritten at each interface while the end-to-end IP addresses remain immutable, validating hop-by-hop forwarding mechanics.
+
+### 2.5 Screenshot Capture Checklist & Caption Template
 - [ ] Screenshot 1: Inbound PDU Details at `SW-A1` showing ARP Opcode 0x0001 (Request) with Target IP `172.16.8.33` and Target MAC `00:00:00:00:00:00`.
 - [ ] Screenshot 2: Outbound PDU Details at `SW-D1` showing ARP Opcode 0x0002 (Reply) with Sender MAC `0000.0c07.ac0a`.
-- **Caption Template:** `Figure 11.1: Packet Tracer Simulation capture of ARP resolution for HSRP Gateway VIP 172.16.8.33, confirming virtual MAC response (0000.0c07.ac0a) and Layer 2 broadcast encapsulation.`
+- [ ] Screenshot 3: PDU Layer comparison at `R1` showing rewritten Layer 2 source/destination MAC addresses with identical Layer 3 source (`172.16.8.40`) and destination (`172.16.5.10`) IP addresses.
+- **Caption Template:** `Figure 11.1: Packet Tracer Simulation capture of ARP resolution for HSRP Gateway VIP 172.16.8.33, confirming virtual MAC response (0000.0c07.ac0a) and hop-by-hop Layer 2 header rewrite across core routing hops.`
 
 ---
 
@@ -56,7 +67,7 @@ As the PDU moves through the network, the Layer 2 Ethernet II header is rewritte
 
 ### 3.1 Simulation Setup & Filter Configuration
 - **Event List Filters:** `DHCP`, `BOOTP`.
-- **Pre-Capture Action:** Select any unconfigured host, e.g., `THEATRE-PC1` on VLAN 20 (`SW-A2`).
+- **Pre-Capture Action:** Select any unconfigured clinical workstation, e.g., `THEATRE-PC1` on VLAN 20 (`SW-A2`).
 - **Trigger Action:** Open host `Desktop` $\rightarrow$ `IP Configuration` $\rightarrow$ Toggle radio button from **Static** to **DHCP**.
 
 ### 3.2 DORA Message Progression & Relay Analysis
@@ -82,7 +93,7 @@ THEATRE-PC1              SW-D1 (SVI 20 Relay)          SRV-CENTRAL (172.16.5.10)
 ```
 
 ### 3.3 What This Proves (Textbook Analysis)
-> The DORA capture validates automated host initialization in an enterprise multi-VLAN routed topology. The initial `DHCP Discover` is confined to the local broadcast domain (VLAN 20) with source IP $0.0.0.0$ and destination $255.255.255.255$. The PDU details at `SW-D1` prove that the Layer 3 switch acts as an RFC 1542 BOOTP/DHCP Relay Agent: it intercepts the UDP broadcast on port 67, inserts its own SVI address ($172.16.8.49$) into the `giaddr` (Gateway IP Address) field, and unicasts the packet to the central DHCP server at $172.16.5.10$. This proves that a single centralized server farm dynamically distributes scoped subnets across isolated clinical zones without requiring a dedicated DHCP server per broadcast domain.
+> The DORA capture validates automated host configuration and broadcast confinement in an enterprise multi-VLAN routed topology. The initial `DHCP Discover` is strictly contained within the client broadcast domain (VLAN 20) using source IP $0.0.0.0$ and destination $255.255.255.255$. The PDU details at `SW-D1` demonstrate RFC 1542 BOOTP/DHCP Relay Agent behavior: the Layer 3 switch intercepts the UDP broadcast on port 67, populates the `giaddr` (Gateway IP Address) field with its local SVI address ($172.16.8.49$), and unicasts the packet to the centralized DHCP server at $172.16.5.10$. This proves that a single centralized server farm dynamically leases scoped subnets across isolated clinical zones without requiring a physical DHCP server per broadcast domain.
 
 ### 3.4 Screenshot Capture Checklist & Caption Template
 - [ ] Screenshot 1: Outbound PDU details of `DHCP Discover` on `THEATRE-PC1` showing UDP port 68 $\rightarrow$ 67 and `ciaddr` = $0.0.0.0$.
@@ -104,18 +115,19 @@ THEATRE-PC1              SW-D1 (SVI 20 Relay)          SRV-CENTRAL (172.16.5.10)
 ### 4.2 PDU Header Fields to Inspect
 - **DNS Query PDU:**
   - Layer 4: UDP Source Port $\ge 1024$ (ephemeral, e.g., 1027), Destination Port 53.
-  - DNS Header: Flags = `0x0100` (Standard query, Recursion Desired).
+  - DNS Header: Transaction ID = `0x0002`, Flags = `0x0100` (Standard query, Recursion Desired).
   - Queries Section: Name = `records.hospital.local`, Type = `A` (Host Address, 0x0001), Class = `IN` (Internet, 0x0001).
 - **DNS Response PDU:**
-  - DNS Header: Flags = `0x8180` (Standard query response, No error).
+  - Layer 4: UDP Source Port 53, Destination Port 1027.
+  - DNS Header: Transaction ID = `0x0002`, Flags = `0x8180` (Standard query response, No error, Recursion Available).
   - Answers Section: Name = `records.hospital.local`, Type = `A`, TTL = `86400`, IP Address = `172.16.5.10`.
 
 ### 4.3 What This Proves (Textbook Analysis)
-> This capture demonstrates stateless application-layer name resolution utilizing UDP transport for minimal protocol overhead. Because DNS lookups are transactional and compact, utilizing connectionless UDP eliminates the three-packet latency penalty of a TCP handshake. The PDU inspection validates internal enterprise DNS architecture: clinical hosts query the local hospital authoritative nameserver ($172.16.5.10$), which resolves the Fully Qualified Domain Name (FQDN) to the central EHR server without leaking internal hospital network naming structures to the public Internet edge.
+> This capture demonstrates stateless application-layer name resolution utilizing UDP transport for minimal protocol overhead. Because DNS lookups are transactional, single-request/single-response operations, utilizing connectionless UDP eliminates the three-packet latency penalty of a TCP connection handshake. The PDU inspection validates internal enterprise DNS architecture: clinical hosts query the local authoritative hospital nameserver ($172.16.5.10$), which resolves the Fully Qualified Domain Name (FQDN) to the central EHR server without leaking internal hospital network naming structures to the public Internet edge.
 
 ### 4.4 Screenshot Capture Checklist & Caption Template
-- [ ] Screenshot 1: DNS Query PDU showing UDP Port 53 destination and Query string `records.hospital.local`.
-- [ ] Screenshot 2: DNS Response PDU from $172.16.5.10$ showing Answer field resolving to A-record $172.16.5.10$.
+- [ ] Screenshot 1: DNS Query PDU showing UDP Port 53 destination, Transaction ID `0x0002`, and Query string `records.hospital.local`.
+- [ ] Screenshot 2: DNS Response PDU from $172.16.5.10$ showing Answer field resolving to A-record $172.16.5.10$ with Flags `0x8180`.
 - **Caption Template:** `Figure 11.3: Packet Tracer PDU details for DNS resolution of records.hospital.local, showing UDP port 53 header and Type-A resource record response mapping to EHR Server 172.16.5.10.`
 
 ---
@@ -123,38 +135,42 @@ THEATRE-PC1              SW-D1 (SVI 20 Relay)          SRV-CENTRAL (172.16.5.10)
 ## 5. PDU Capture Item 4: TCP Three-Way Handshake & Imaging Data Transfer
 
 ### 5.1 Simulation Setup & Filter Configuration
-- **Event List Filters:** `TCP`, `HTTP` (or `FTP`).
-- **Trigger Action:** On `ICU-PC1`, open Web Browser $\rightarrow$ Enter URL: `http://records.hospital.local/` (or `http://172.16.5.10/`).
+- **Event List Filters:** `TCP`, `HTTP`, `FTP`.
+- **Trigger Actions:**
+  - *HTTP Scenario:* On `ICU-PC1`, open Web Browser $\rightarrow$ Enter URL: `http://records.hospital.local/` (Port 80).
+  - *FTP Scenario:* On `ICU-PC1`, command prompt $\rightarrow$ `ftp 172.16.5.10` $\rightarrow$ Enter credentials $\rightarrow$ `get mri_scan_01.dcm` (Control Port 21, Data Port 20).
 
 ### 5.2 TCP Control Block Details & State Transitions
 Inspect the step-by-step evolution of Sequence Numbers ($Seq$), Acknowledgment Numbers ($Ack$), Control Flags, and Window Size ($Win$):
 
 ```
-ICU-PC1 (Client, Port 1032)                  SRV-CENTRAL (HTTP Server, Port 80)
+ICU-PC1 (Client, Port 1032)                  SRV-CENTRAL (Server, Port 80/20)
     |                                                |
     |--- [SYN] Seq=0, Ack=0, Win=16384, MSS=1460 --->| (1. Client initiates connection)
     |                                                |
-    |<-- [SYN, ACK] Seq=0, Ack=1, Win=16384, MSS=1460| (2. Server synchronizes & ACKs)
+    |<-- [SYN, ACK] Seq=0, Ack=1, Win=16384, MSS=1460| (2. Server synchronizes & ACKs ISN+1)
     |                                                |
     |--- [ACK] Seq=1, Ack=1, Win=16384 ------------->| (3. Handshake established)
     |                                                |
-    |--- [PSH, ACK] HTTP GET / (Len=488) ----------->| (4. Application Data Request)
+    |--- [PSH, ACK] GET /mri_scan (Len=488) -------->| (4. Application Data Request)
     |    Seq=1, Ack=1                                |
     |                                                |
-    |<-- [ACK] Seq=1, Ack=489, Win=15896 -----------| (5. Server acknowledges data receipt)
+    |<-- [ACK] Seq=1, Ack=489, Win=15896 -----------| (5. Server ACKs request: Ack = 1 + 488)
     |                                                |
-    |<-- [PSH, ACK] HTTP 200 OK (Data Transfer) -----| (6. Imaging/record payload delivery)
-    |    Seq=1, Ack=489, Len=1024                    |
+    |<-- [PSH, ACK] Data Payload (Len=1024) --------| (6. Imaging payload: Seq=1, Len=1024)
+    |                                                |
+    |--- [ACK] Seq=489, Ack=1025, Win=16384 -------->| (7. Client ACKs data: Ack = 1 + 1024)
 ```
 
 ### 5.3 What This Proves (Textbook Analysis)
-> The TCP capture verifies the establishment of a full-duplex, reliable connection-oriented transport channel in accordance with RFC 793. The Initial Sequence Number (ISN) synchronization prevents stale duplicate segments from prior connections from corrupting active sessions. The capture proves cumulative acknowledgment behavior ($Ack = Seq_{received} + Length$) and dynamic advertised receive window flow control ($Win = 16384$ bytes). This guarantees zero segment loss and strict in-order delivery during high-volume diagnostic imaging and patient health record retrieval.
+> The TCP capture verifies the establishment of a full-duplex, reliable connection-oriented transport channel in accordance with RFC 793. The Initial Sequence Number (ISN) synchronization prevents stale duplicate segments from prior connections from corrupting active sessions. The capture proves cumulative acknowledgment behavior ($Ack = Seq_{received} + \text{Length}$) and dynamic advertised receive window flow control ($Win = 16384$ bytes). This guarantees zero segment loss, strict in-order reassembly, and sender rate throttling during high-volume diagnostic imaging (PACS) and patient health record retrieval.
 
 ### 5.4 Screenshot Capture Checklist & Caption Template
 - [ ] Screenshot 1: SYN packet PDU details showing Flag `0x002` (SYN set, ACK clear), Sequence Number = 0, Window Size = 16384.
 - [ ] Screenshot 2: SYN-ACK packet PDU details showing Flags `0x012` (SYN set, ACK set), Sequence Number = 0, Acknowledgment Number = 1.
 - [ ] Screenshot 3: Established ACK packet showing Flags `0x010` (ACK only), Sequence Number = 1, Acknowledgment Number = 1.
-- **Caption Template:** `Figure 11.4: Detailed Packet Tracer PDU capture of the TCP three-way handshake (SYN, SYN-ACK, ACK) between ICU workstation and EHR database, annotating sequence numbers, flag bits, and sliding window flow control.`
+- [ ] Screenshot 4: Server data segment with payload showing sequence progression and corresponding client ACK with incremented acknowledgment number.
+- **Caption Template:** `Figure 11.4: Detailed Packet Tracer PDU capture of the TCP three-way handshake and subsequent imaging data transfer, annotating sequence numbers, cumulative ACKs, flag bits, and sliding window flow control.`
 
 ---
 
@@ -162,27 +178,28 @@ ICU-PC1 (Client, Port 1032)                  SRV-CENTRAL (HTTP Server, Port 80)
 
 ### 6.1 Simulation Setup & Filter Configuration
 - **Event List Filters:** `TCP`, `HTTP`.
-- **Trigger Action:** In the web browser of `ICU-PC1`, click the **Stop** button or close the browser tab after the HTTP page loads, or inspect subsequent PDUs in the session buffer.
+- **Trigger Action:** In the web browser of `ICU-PC1`, close the active browser tab after the imaging page loads, or inspect subsequent PDUs in the active session buffer.
 
 ### 6.2 Control Flags & PDU Progression
 - **PDU 1 (FIN-ACK from Client):**
   - Flags: `0x011` (`FIN` = 1, `ACK` = 1).
-  - Meaning: Client has completed data transmission and requests half-close.
+  - Meaning: Client has completed data transmission and initiates graceful half-close.
 - **PDU 2 (ACK from Server):**
   - Flags: `0x010` (`ACK` = 1).
   - Acknowledgment: $Ack = Seq_{\text{FIN}} + 1$.
 - **PDU 3 (FIN-ACK from Server):**
   - Flags: `0x011` (`FIN` = 1, `ACK` = 1).
-  - Meaning: Server has completed its outbound transmission and confirms full closure.
+  - Meaning: Server has completed outbound data flushing and confirms full closure.
 - **PDU 4 (Final ACK from Client):**
   - Flags: `0x010` (`ACK` = 1).
-  - State: Session enters `TIME_WAIT` (2MSL) on client to ensure delayed packets expire.
+  - State: Client enters `TIME_WAIT` (2MSL duration) to ensure delayed duplicate segments expire.
 
 ### 6.3 What This Proves (Textbook Analysis)
-> Connection teardown validates orderly resource reclamation at the transport layer. Unlike an abrupt RST abort, the symmetric FIN-ACK sequence guarantees that all in-flight clinical imaging segments buffered in the socket queues are completely delivered and acknowledged before the socket control blocks (TCBs) are deallocated from system memory. This protects against transaction truncation during database commits.
+> Connection teardown validates orderly resource reclamation at the transport layer. Unlike an abrupt RST abort, the symmetric FIN-ACK sequence guarantees that all in-flight clinical imaging segments buffered in the socket queues are completely delivered and acknowledged before the socket Transmission Control Blocks (TCBs) are deallocated from system memory. This protects against transaction truncation during database commits and prevents socket port exhaustion on central medical database servers.
 
 ### 6.4 Screenshot Capture Checklist & Caption Template
-- [ ] Screenshot: Outbound PDU at Client showing `FIN` flag set, followed by Server `ACK`.
+- [ ] Screenshot 1: Outbound PDU at Client showing `FIN` flag set (`0x011`), followed by Server `ACK` (`0x010`).
+- [ ] Screenshot 2: Outbound PDU at Server showing `FIN` flag set, followed by final Client `ACK`.
 - **Caption Template:** `Figure 11.5: Packet Tracer PDU capture of graceful TCP connection termination (FIN-ACK exchange), confirming socket resource release and zero clinical record truncation.`
 
 ---
@@ -201,11 +218,14 @@ ICU-PC1 (Client, Port 1032)                  SRV-CENTRAL (HTTP Server, Port 80)
 - **Layer 4 UDP Header:**
   - Source Port: `5004` (Clinical Telemetry).
   - Destination Port: `5004` (Telemetry Collector).
-  - Length: Variable (e.g., 51 bytes for binary telemetry frame).
-  - Checksum: 16-bit UDP checksum over pseudo-header and payload.
+  - Length: 51 bytes (8-byte UDP header + 43-byte medical payload).
+  - Checksum: 16-bit UDP checksum over IPv4 pseudo-header and payload.
+- **Transport Behavioral Verification:**
+  - Handshake: **None** (No prior SYN exchange).
+  - Acknowledgment: **None** (No return ACK packets).
 
 ### 7.3 What This Proves (Textbook Analysis)
-> The UDP vitals capture proves that life-critical physiological telemetry utilizes connectionless transport to guarantee minimum transit delay and eliminate head-of-line blocking. The PDU inspection confirms that no synchronization handshakes, windowing constraints, or transport-layer acknowledgments exist. Furthermore, the IP header inspection validates DiffServ Expedited Forwarding (DSCP EF / ToS 0xB8), confirming that distribution switches will place these packets into Priority Queues (PQ) ahead of bulk TCP data.
+> The UDP vitals capture proves that life-critical physiological telemetry utilizes connectionless transport to guarantee minimum transit delay and eliminate head-of-line blocking. The PDU inspection confirms that no synchronization handshakes, windowing constraints, or transport-layer acknowledgments exist. Furthermore, the IP header inspection validates DiffServ Expedited Forwarding (DSCP EF / ToS 0xB8), confirming that distribution switches will place these packets into Priority Queues (PQ) ahead of bulk TCP data, ensuring microsecond jitter bounds for continuous patient monitoring.
 
 ### 7.4 Screenshot Capture Checklist & Caption Template
 - [ ] Screenshot: PDU Details showing 8-byte UDP header (Ports 5004 $\rightarrow$ 5004) and IP ToS field set to DSCP EF (`0xB8`).
@@ -219,10 +239,10 @@ ICU-PC1 (Client, Port 1032)                  SRV-CENTRAL (HTTP Server, Port 80)
 - **Event List Filters:** `OSPF`.
 - **Trigger Actions:**
   1. *Adjacency Formation:* On `SW-D1`, bounce interface `Gi0/1` (`shutdown` followed by `no shutdown`).
-  2. *Link-State Change Flood:* Cut link between `R1:Se0/0/0` and `R2:Se0/0/0`.
+  2. *Link-State Change Flood:* In Simulation mode, delete or shut down the primary serial WAN link between `R1:Serial0/0/0` and `R2:Serial0/0/0`.
 
 ### 8.2 OSPF Packet Types & PDU Details
-Inspect the five RFC 2328 OSPF packet formats:
+Inspect all five RFC 2328 OSPF packet formats:
 
 | OSPF Packet Type | Name | Captured Header Fields | Purpose in Hospital Network |
 | :---: | :--- | :--- | :--- |
@@ -237,7 +257,8 @@ Inspect the five RFC 2328 OSPF packet formats:
 
 ### 8.4 Screenshot Capture Checklist & Caption Template
 - [ ] Screenshot 1: OSPF Hello packet showing Router ID `172.16.8.106`, Area 0, and Dead Timer 40s.
-- [ ] Screenshot 2: OSPF LSU packet captured during link failure showing updated Link-State ID and metric change.
+- [ ] Screenshot 2: OSPF DBD exchange showing Master/Slave election and LSA header summaries.
+- [ ] Screenshot 3: OSPF Type-4 LSU packet captured during link failure showing updated Link-State ID and metric change, followed by LSAck.
 - **Caption Template:** `Figure 11.7: Packet Tracer Simulation capture of OSPF Type-4 Link-State Update (LSU) and LSAck flood following WAN link failure, demonstrating reliable event-driven link-state flooding.`
 
 ---
@@ -247,7 +268,7 @@ Inspect the five RFC 2328 OSPF packet formats:
 ### 9.1 Simulation Setup & Filter Configuration
 - **Event List Filters:** `HSRP`.
 - **Pre-Capture State:** Normal operation where `SW-D1` is Active and `SW-D2` is Standby for VLAN 10.
-- **Trigger:** Capture periodic hellos or trigger failover by shutting down `SW-D1:Vlan10`.
+- **Trigger:** Capture periodic hellos in Simulation Mode or trigger failover by shutting down `SW-D1:Vlan10`.
 
 ### 9.2 PDU Header Fields & Payload Inspection
 - **Network Layer:** Multicast Destination IP `224.0.0.2` (All-Routers group).
@@ -274,7 +295,7 @@ Inspect the five RFC 2328 OSPF packet formats:
 
 ### 10.1 Simulation Setup & Filter Configuration
 - **Event List Filters:** `STP`.
-- **Trigger:** Inspect background BPDUs on `SW-A1:Gi0/1`, or sever trunk to observe Topology Change Notification (TCN).
+- **Trigger:** Inspect background BPDUs on `SW-A1:Gi0/1`, or sever an uplink to observe Rapid Spanning Tree synchronization.
 
 ### 10.2 BPDU Header Details
 - **Layer 2 Encapsulation:** IEEE 802.3 MAC Destination `01:80:C2:00:00:00` (Bridge Group Multicast).

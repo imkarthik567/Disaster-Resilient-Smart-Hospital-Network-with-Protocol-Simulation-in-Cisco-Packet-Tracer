@@ -58,10 +58,11 @@ def task_test():
     ok21 = run_command(["tests/test_convergence_analysis.py"], "Executing Failover Convergence Analysis & SLA Tests")
     ok22 = run_command(["tests/test_digital_twin.py"], "Executing NetworkX Digital Twin & Chaos Simulation Tests")
     ok23 = run_command(["tests/test_automation_pipeline.py"], "Executing NetDevOps Jinja2 Configuration Pipeline Tests")
+    ok24 = run_command(["tests/test_pdu_analysis_guide.py"], "Executing PDU Analysis Evidence Pack Guide Tests")
     return (
         ok1 and ok2 and ok3 and ok4 and ok5 and ok6 and ok7 and ok8 and
         ok9 and ok10 and ok11 and ok12 and ok13 and ok14 and ok15 and ok16 and
-        ok17 and ok18 and ok19 and ok20 and ok21 and ok22 and ok23
+        ok17 and ok18 and ok19 and ok20 and ok21 and ok22 and ok23 and ok24
     )
 
 def task_lint():
