@@ -589,5 +589,5 @@ In emergency disaster scenarios where WAN links degrade and experience packet lo
 | :--- | :--- | :--- | :--- |
 | **Pings fail after link delete** | PT clock paused or ARP table cleared | Click **Fast Forward Time** button (bottom left) 3 times; re-run ping. | Open `docs/convergence_findings.md` showing verified 1.74s convergence table. |
 | **Packet Tracer freezes / crashes** | OS memory leak in PT GUI | Restart Packet Tracer; load saved state `network_topology.pkt`. | Switch immediately to `results/charts/failover_theoretical_vs_observed.png` and play pre-recorded video. |
-| **SBC Python script throws error** | Indentation or simulator sandbox glitch | Reset SBC container or run standalone `/sim/detection_coverage.py` in host terminal. | Show `docs/pdu_analysis_guide.md` Figure 11.6 and unit test suite passing 27/27. |
+| **SBC Python script throws error** | Indentation or simulator sandbox glitch | Reset SBC container or run standalone `/sim/detection_coverage.py` in host terminal. | Show `docs/pdu_analysis_guide.md` Figure 11.6 and unit test suite passing 28/28. |
 | **HSRP fails to preempt** | Timer mismatch or preemption disabled | On SW-D1: `conf t` $\rightarrow$ `int vlan 10` $\rightarrow$ `standby 10 preempt`. | Present `configs/SW-D1/SW-D1.cfg` line 45 showing preemption directive. |

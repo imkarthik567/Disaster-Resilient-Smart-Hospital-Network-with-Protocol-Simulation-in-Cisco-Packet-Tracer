@@ -62,10 +62,11 @@ def task_test():
     ok25 = run_command(["tests/test_tcp_vs_udp.py"], "Executing TCP vs. UDP Comparative Study & Design Justification Tests")
     ok26 = run_command(["tests/test_simulation_report.py"], "Executing Simulation Analysis Report Structure & Empirical Benchmark Tests")
     ok27 = run_command(["tests/test_review_presentation_and_viva.py"], "Executing Review Slides Outline & Viva Voce Guide Tests")
+    ok28 = run_command(["tests/test_ipv6_dual_stack.py"], "Executing IPv6 Dual-Stack Architecture & Advanced Extensions Tests")
     return (
         ok1 and ok2 and ok3 and ok4 and ok5 and ok6 and ok7 and ok8 and
         ok9 and ok10 and ok11 and ok12 and ok13 and ok14 and ok15 and ok16 and
-        ok17 and ok18 and ok19 and ok20 and ok21 and ok22 and ok23 and ok24 and ok25 and ok26 and ok27
+        ok17 and ok18 and ok19 and ok20 and ok21 and ok22 and ok23 and ok24 and ok25 and ok26 and ok27 and ok28
     )
 
 def task_lint():

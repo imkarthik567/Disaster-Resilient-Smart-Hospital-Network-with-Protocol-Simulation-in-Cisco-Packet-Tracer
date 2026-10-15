@@ -153,7 +153,7 @@ class TestReviewPresentationAndViva(unittest.TestCase):
         self.assertIn("Pings fail after link delete", self.viva_content)
         self.assertIn("Packet Tracer freezes / crashes", self.viva_content)
         self.assertIn("SBC Python script throws error", self.viva_content)
-        self.assertIn("passing 27/27", self.viva_content)
+        self.assertIn("passing 28/28", self.viva_content)
         self.assertIn("HSRP fails to preempt", self.viva_content)
 
 
