@@ -1,0 +1,23 @@
+<?xml version="1.0" ?>
+<FlowMonitor>
+  <FlowStats>
+    <Flow flowId="1" timeFirstTxPacket="+1000000000.0ns" timeFirstRxPacket="+1010000000.0ns" timeLastTxPacket="+20000000000.0ns" timeLastRxPacket="+20010000000.0ns" delaySum="+190000000.0ns" jitterSum="+15000000.0ns" txBytes="20000" rxBytes="20000" txPackets="100" rxPackets="100" lostPackets="0" timesForwarded="100">
+    </Flow>
+    <Flow flowId="2" timeFirstTxPacket="+2000000000.0ns" timeFirstRxPacket="+2015000000.0ns" timeLastTxPacket="+25000000000.0ns" timeLastRxPacket="+25020000000.0ns" delaySum="+500000000.0ns" jitterSum="+40000000.0ns" txBytes="50000000" rxBytes="49500000" txPackets="34246" rxPackets="33904" lostPackets="342" timesForwarded="33904">
+    </Flow>
+    <Flow flowId="3" timeFirstTxPacket="+5000000000.0ns" timeFirstRxPacket="+5005000000.0ns" timeLastTxPacket="+15000000000.0ns" timeLastRxPacket="+15005000000.0ns" delaySum="+50000000.0ns" jitterSum="+5000000.0ns" txBytes="80000" rxBytes="76000" txPackets="500" rxPackets="475" lostPackets="25" timesForwarded="475">
+    </Flow>
+    <Flow flowId="4" timeFirstTxPacket="+10000000000.0ns" timeFirstRxPacket="+10002000000.0ns" timeLastTxPacket="+20000000000.0ns" timeLastRxPacket="+20002000000.0ns" delaySum="+20000000.0ns" jitterSum="+1000000.0ns" txBytes="1000000" rxBytes="1000000" txPackets="2000" rxPackets="2000" lostPackets="0" timesForwarded="2000">
+    </Flow>
+  </FlowStats>
+  <Ipv4FlowClassifier>
+    <Flow flowId="1" sourceAddress="172.16.7.130" destinationAddress="172.16.7.10" protocol="17" sourcePort="5001" destinationPort="5001">
+    </Flow>
+    <Flow flowId="2" sourceAddress="172.16.8.45" destinationAddress="172.16.7.10" protocol="6" sourcePort="49152" destinationPort="8080">
+    </Flow>
+    <Flow flowId="3" sourceAddress="172.16.6.10" destinationAddress="172.16.7.228" protocol="17" sourcePort="5060" destinationPort="5060">
+    </Flow>
+    <Flow flowId="4" sourceAddress="172.16.0.25" destinationAddress="172.16.7.130" protocol="17" sourcePort="34567" destinationPort="4444">
+    </Flow>
+  </Ipv4FlowClassifier>
+</FlowMonitor>

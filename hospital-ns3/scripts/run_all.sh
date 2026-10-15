@@ -1,61 +1,83 @@
 #!/usr/bin/env bash
 # ==============================================================================
-# run_all.sh - Execute Full NS-3 Hospital Simulation Suite & Analytics
+# run_all.sh - Master Orchestrator for All Hospital Network Simulations
 # Disaster-Resilient Smart Hospital Network (NS-3 Extension)
 # Team: Rohit Kathiravan (24BCE0441), Karthikeyan S (24BCT0332)
 # SCOPE, VIT Vellore
 # ==============================================================================
-set -euo pipefail
+# Executes all experiment suites across seeds, writes structured outputs to
+# results/<experiment>/, logs failures without aborting the suite, and summarizes.
+# ==============================================================================
+set -u
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 RESULTS_ROOT="${REPO_ROOT}/results"
+LOG_DIR="${RESULTS_ROOT}/logs"
+mkdir -p "${LOG_DIR}"
 
-echo "================================================================================"
-echo "  DISASTER-RESILIENT SMART HOSPITAL NETWORK - NS-3 SIMULATION SUITE"
-echo "================================================================================"
+TIMESTAMP="$(date '+%Y%m%d_%H%M%S')"
+MASTER_LOG="${LOG_DIR}/master_run_${TIMESTAMP}.log"
 
-# Step 1: Sync scenarios into NS-3 scratch and build
-echo ">>> [STEP 1/3] Syncing C++ Scenarios to NS-3 scratch & building..."
-"${SCRIPT_DIR}/setup_scratch.sh" "$@"
+echo "================================================================================" | tee -a "${MASTER_LOG}"
+echo "  DISASTER-RESILIENT SMART HOSPITAL NETWORK - MASTER SIMULATION SUITE" | tee -a "${MASTER_LOG}"
+echo "  Repository Root : ${REPO_ROOT}" | tee -a "${MASTER_LOG}"
+echo "  Results Root    : ${RESULTS_ROOT}" | tee -a "${MASTER_LOG}"
+echo "  Master Log      : ${MASTER_LOG}" | tee -a "${MASTER_LOG}"
+echo "================================================================================" | tee -a "${MASTER_LOG}"
 
-# Determine NS-3 executable directory
-NS3_EXE_DIR="${NS3_DIR:-${HOME}/ns-3}"
-if [[ ! -x "${NS3_EXE_DIR}/ns3" ]]; then
-    # Look for fallback
-    for cand in "${HOME}/ns-3" "${HOME}/ns-3-dev" "${HOME}/ns-allinone-3."*"/ns-3."*; do
-        if [[ -x "${cand}/ns3" ]]; then
-            NS3_EXE_DIR="${cand}"
-            break
-        fi
-    done
+# Step 0: Run Unit Tests on FlowMonitor Parser & Stats
+echo -e "\n>>> [STEP 0/6] Running Pytest Suite to Verify Parser & Statistical Functions..." | tee -a "${MASTER_LOG}"
+if python3 -m pytest "${REPO_ROOT}/tests/test_flowmon_parse.py" -v >> "${MASTER_LOG}" 2>&1; then
+    echo "  [PASS] Pytest Suite passed successfully!" | tee -a "${MASTER_LOG}"
+else
+    echo "  [WARNING] Pytest reported errors. Check ${MASTER_LOG} for details." | tee -a "${MASTER_LOG}"
 fi
 
-cd "${NS3_EXE_DIR}"
+# Track experiment status
+declare -A EXP_STATUS
 
-# Step 2: Run Experiment 1 - Normal Baseline Operation
-EXP1_DIR="${RESULTS_ROOT}/exp1_baseline"
-mkdir -p "${EXP1_DIR}"
-echo ">>> [STEP 2/3] Executing Experiment 1: Normal Multi-Zone Hospital Operation..."
-./ns3 run "hospital_baseline --enableFailure=false --simTime=30.0 --xmlTrace=${EXP1_DIR}/flowmon.xml --csvSummary=${EXP1_DIR}/summary.csv --expId=EXP-01-BASELINE"
+run_experiment() {
+    local exp_name="$1"
+    local exp_script="$2"
+    shift 2
+    local extra_args="$@"
 
-echo "[ANALYSIS] Processing FlowMonitor XML for Experiment 1..."
-python3 "${REPO_ROOT}/analysis/parse_flowmon.py" "${EXP1_DIR}/flowmon.xml" -o "${EXP1_DIR}/flow_metrics.csv"
-python3 "${REPO_ROOT}/analysis/plot_metrics.py" "${EXP1_DIR}/flow_metrics.csv" -o "${EXP1_DIR}"
+    echo -e "\n================================================================================" | tee -a "${MASTER_LOG}"
+    echo ">>> Running Experiment: ${exp_name}" | tee -a "${MASTER_LOG}"
+    echo "================================================================================" | tee -a "${MASTER_LOG}"
 
-# Step 3: Run Experiment 2 - Primary WAN Disaster Failure & Dynamic Convergence
-EXP2_DIR="${RESULTS_ROOT}/exp2_wan_failover"
-mkdir -p "${EXP2_DIR}"
-echo ">>> [STEP 3/3] Executing Experiment 2: Primary WAN Fiber Cut & Dynamic Failover..."
-./ns3 run "hospital_baseline --enableFailure=true --failureTime=10.0 --recoveryTime=22.0 --simTime=30.0 --xmlTrace=${EXP2_DIR}/flowmon.xml --csvSummary=${EXP2_DIR}/summary.csv --expId=EXP-02-WAN-FAILOVER"
+    local exp_log="${LOG_DIR}/${exp_name}_${TIMESTAMP}.log"
 
-echo "[ANALYSIS] Processing FlowMonitor XML for Experiment 2..."
-python3 "${REPO_ROOT}/analysis/parse_flowmon.py" "${EXP2_DIR}/flowmon.xml" -o "${EXP2_DIR}/flow_metrics.csv"
-python3 "${REPO_ROOT}/analysis/plot_metrics.py" "${EXP2_DIR}/flow_metrics.csv" -o "${EXP2_DIR}"
+    if [[ -x "${exp_script}" ]]; then
+        if "${exp_script}" ${extra_args} >> "${exp_log}" 2>&1; then
+            echo "[SUCCESS] ${exp_name} completed cleanly. Log -> ${exp_log}" | tee -a "${MASTER_LOG}"
+            EXP_STATUS["${exp_name}"]="SUCCESS"
+        else
+            echo "[ERROR] ${exp_name} failed. Continuing without stopping... Log -> ${exp_log}" | tee -a "${MASTER_LOG}"
+            EXP_STATUS["${exp_name}"]="FAILED"
+        fi
+    else
+        echo "[SKIP] Script ${exp_script} not found or not executable." | tee -a "${MASTER_LOG}"
+        EXP_STATUS["${exp_name}"]="NOT_FOUND"
+    fi
+}
 
-echo "================================================================================"
-echo "[SUCCESS] All NS-3 simulation experiments completed successfully!"
-echo "Results and publication charts available in:"
-echo "  - ${EXP1_DIR}"
-echo "  - ${EXP2_DIR}"
-echo "================================================================================"
+# Run Experiment Suite with CLI flags (e.g. --quick)
+EXTRA_FLAGS="$@"
+
+run_experiment "E1_TCP_UDP"       "${SCRIPT_DIR}/run_e1.sh" ${EXTRA_FLAGS}
+run_experiment "E2_QUEUE_QOS"     "${SCRIPT_DIR}/run_e2.sh" ${EXTRA_FLAGS}
+run_experiment "E3_PACKET_SIZE"   "${SCRIPT_DIR}/run_e3.sh" ${EXTRA_FLAGS}
+run_experiment "E4_TCP_DYNAMICS"  "${SCRIPT_DIR}/run_e4.sh" ${EXTRA_FLAGS}
+run_experiment "E5_WAN_FAILOVER"  "${SCRIPT_DIR}/run_e5.sh" ${EXTRA_FLAGS}
+
+echo -e "\n================================================================================" | tee -a "${MASTER_LOG}"
+echo "  MASTER EXECUTION SUMMARY" | tee -a "${MASTER_LOG}"
+echo "================================================================================" | tee -a "${MASTER_LOG}"
+for exp in "${!EXP_STATUS[@]}"; do
+    printf "  %-25s : [%s]\n" "${exp}" "${EXP_STATUS[$exp]}" | tee -a "${MASTER_LOG}"
+done
+echo "================================================================================" | tee -a "${MASTER_LOG}"
+echo "All outputs and publication charts compiled in: ${RESULTS_ROOT}" | tee -a "${MASTER_LOG}"
+echo "================================================================================" | tee -a "${MASTER_LOG}"
