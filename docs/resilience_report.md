@@ -46,13 +46,13 @@ A 10,000-run stochastic Monte Carlo simulation evaluated random simultaneous com
 
 | Clinical Traffic Flow | Simulated Availability (%) | Expected Uptime ('Nines') | Annual Downtime Estimate |
 | :--- | :---: | :---: | :---: |
-| **ICU Telemetry -> Central EHR** | **97.060%** | Three Nines (99.9%) | 15452.6 minutes/year |
-| **Surgery Vitals -> Central EHR** | **96.920%** | Three Nines (99.9%) | 16188.5 minutes/year |
-| **Admin Billing -> Central EHR** | **97.040%** | Three Nines (99.9%) | 15557.8 minutes/year |
-| **Clinic Cache -> Central EHR (WAN)** | **94.730%** | Three Nines (99.9%) | 27699.1 minutes/year |
-| **ICU Nurse Station -> Central EHR** | **97.030%** | Three Nines (99.9%) | 15610.3 minutes/year |
-| **Access SW-A1 -> Standby Dist SW-D2** | **99.550%** | Three Nines (99.9%) | 2365.2 minutes/year |
-| **Core Inter-Distribution Trunk** | **99.560%** | Three Nines (99.9%) | 2312.6 minutes/year |
+| **ICU Telemetry -> Central EHR** | **97.020%** | Three Nines (99.9%) | 15662.9 minutes/year |
+| **Surgery Vitals -> Central EHR** | **97.150%** | Three Nines (99.9%) | 14979.6 minutes/year |
+| **Admin Billing -> Central EHR** | **97.310%** | Three Nines (99.9%) | 14138.6 minutes/year |
+| **Clinic Cache -> Central EHR (WAN)** | **94.880%** | Three Nines (99.9%) | 26910.7 minutes/year |
+| **ICU Nurse Station -> Central EHR** | **97.260%** | Three Nines (99.9%) | 14401.4 minutes/year |
+| **Access SW-A1 -> Standby Dist SW-D2** | **99.650%** | Three Nines (99.9%) | 1839.6 minutes/year |
+| **Core Inter-Distribution Trunk** | **99.580%** | Three Nines (99.9%) | 2207.5 minutes/year |
 
 ---
 
