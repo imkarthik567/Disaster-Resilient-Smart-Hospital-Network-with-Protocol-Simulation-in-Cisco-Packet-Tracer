@@ -138,6 +138,80 @@ class TestConfigLinterDefects(unittest.TestCase):
         linter = self._run_linter_on_snippet("SW-A1", cfg)
         self.assertTrue(any("BPDU Guard" in e for e in linter.errors))
 
+    def test_detects_invalid_subnet_mask(self):
+        """Catches invalid subnet mask format on an interface."""
+        cfg = """
+        hostname R1
+        service password-encryption
+        enable secret 5 $1$mERr$hx5rVt7rPNoS4wqbXKX7m0
+        ip ssh version 2
+        line vty 0 4
+         transport input ssh
+         login local
+        interface GigabitEthernet0/0
+         ip address 172.16.8.98 255.255.255.333
+        """
+        linter = self._run_linter_on_snippet("R1", cfg)
+        self.assertTrue(any("invalid subnet mask format" in e for e in linter.errors))
+
+    def test_detects_duplicate_ip_across_devices(self):
+        """Catches identical IP configured across two distinct devices."""
+        cfg_r1 = """
+        hostname R1
+        service password-encryption
+        enable secret 5 $1$mERr$hx5rVt7rPNoS4wqbXKX7m0
+        ip ssh version 2
+        line vty 0 4
+         transport input ssh
+         login local
+        interface GigabitEthernet0/0
+         ip address 172.16.8.98 255.255.255.252
+        """
+        cfg_r2 = """
+        hostname R2
+        service password-encryption
+        enable secret 5 $1$mERr$hx5rVt7rPNoS4wqbXKX7m0
+        ip ssh version 2
+        line vty 0 4
+         transport input ssh
+         login local
+        interface GigabitEthernet0/0
+         ip address 172.16.8.98 255.255.255.252
+        """
+        dev_r1 = os.path.join(self.temp_dir.name, "R1")
+        dev_r2 = os.path.join(self.temp_dir.name, "R2")
+        os.makedirs(dev_r1, exist_ok=True)
+        os.makedirs(dev_r2, exist_ok=True)
+        with open(os.path.join(dev_r1, "R1.cfg"), "w", encoding="utf-8") as f:
+            f.write(textwrap.dedent(cfg_r1).strip())
+        with open(os.path.join(dev_r2, "R2.cfg"), "w", encoding="utf-8") as f:
+            f.write(textwrap.dedent(cfg_r2).strip())
+
+        linter = ConfigLinter(
+            configs_dir=self.temp_dir.name,
+            cabling_csv=os.path.join(PROJECT_ROOT, "topology", "cabling.csv"),
+            ip_table_csv=os.path.join(PROJECT_ROOT, "addressing", "ip_table.csv")
+        )
+        linter.run_all_checks()
+        self.assertTrue(any("Duplicate IP address detected" in e for e in linter.errors))
+
+    def test_detects_missing_hsrp_and_helper_on_svi(self):
+        """Catches missing HSRP standby group and missing DHCP helper on client SVI of distribution switch."""
+        cfg = """
+        hostname SW-D1
+        service password-encryption
+        enable secret 5 $1$mERr$hx5rVt7rPNoS4wqbXKX7m0
+        ip ssh version 2
+        line vty 0 4
+         transport input ssh
+         login local
+        interface Vlan10
+         ip address 172.16.8.35 255.255.255.224
+        """
+        linter = self._run_linter_on_snippet("SW-D1", cfg)
+        self.assertTrue(any("missing HSRP standby group" in e for e in linter.errors))
+        self.assertTrue(any("missing 'ip helper-address'" in e for e in linter.errors))
+
 
 class TestShowParsers(unittest.TestCase):
     def test_parse_show_ip_interface_brief(self):
