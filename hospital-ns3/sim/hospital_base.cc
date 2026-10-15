@@ -85,6 +85,14 @@ void AddTopologyEntry(uint32_t id, const std::string &name, const std::string &r
   g_topologyTable.push_back({id, name, role, ip, mask, vlan});
 }
 
+void AddTopologyEntryIp(uint32_t id, const std::string &name, const std::string &role,
+                        Ipv4Address ip, const std::string &mask, const std::string &vlan)
+{
+  std::ostringstream oss;
+  ip.Print(oss);
+  g_topologyTable.push_back({id, name, role, oss.str(), mask, vlan});
+}
+
 void PrintTopologyTable()
 {
   std::cout << "\n====================================================================================================" << std::endl;
@@ -412,7 +420,7 @@ int main(int argc, char *argv[])
   ipv4.SetBase("172.16.7.0", "255.255.255.192", "0.0.0.10");
   Ipv4InterfaceContainer ifServer = ipv4.Assign(serverDevs);
   Ipv4Address serverIp = ifServer.GetAddress(0);
-  AddTopologyEntry(nodeServer->GetId(), "Records-Server", "Server Farm", serverIp.GetAny(), "255.255.255.192", "VLAN 50 Servers");
+  AddTopologyEntryIp(nodeServer->GetId(), "Records-Server", "Server Farm", serverIp, "255.255.255.192", "VLAN 50 Servers");
 
   // ICU Telemetry Subnet: 172.16.7.128/26 (Hosts: .130 upwards)
   std::vector<Ipv4Address> icuIps(numIcu);
@@ -422,8 +430,8 @@ int main(int argc, char *argv[])
       ipv4.SetBase("172.16.7.128", "255.255.255.192", hostStart.c_str());
       Ipv4InterfaceContainer ifIcu = ipv4.Assign(icuDevs[i]);
       icuIps[i] = ifIcu.GetAddress(0);
-      AddTopologyEntry(icuNodes.Get(i)->GetId(), "ICU-Sensor-" + std::to_string(i + 1), "ICU Bedside IoT",
-                       icuIps[i].GetAny(), "255.255.255.192", "VLAN 10 ICU");
+      AddTopologyEntryIp(icuNodes.Get(i)->GetId(), "ICU-Sensor-" + std::to_string(i + 1), "ICU Bedside IoT",
+                         icuIps[i], "255.255.255.192", "VLAN 10 ICU");
     }
 
   // Surgery Workstations: 172.16.7.64/26
@@ -432,8 +440,8 @@ int main(int argc, char *argv[])
       std::string hostStart = "0.0.0." + std::to_string(70 + (i * 4));
       ipv4.SetBase("172.16.7.64", "255.255.255.192", hostStart.c_str());
       Ipv4InterfaceContainer ifSurg = ipv4.Assign(surgeryDevs[i]);
-      AddTopologyEntry(surgeryNodes.Get(i)->GetId(), "Surgery-Station-" + std::to_string(i + 1), "OT Surgical Node",
-                       ifSurg.GetAddress(0).GetAny(), "255.255.255.192", "VLAN 20 Surgery");
+      AddTopologyEntryIp(surgeryNodes.Get(i)->GetId(), "Surgery-Station-" + std::to_string(i + 1), "OT Surgical Node",
+                         ifSurg.GetAddress(0), "255.255.255.192", "VLAN 20 Surgery");
     }
 
   // Admin Workstations: 172.16.4.0/23
@@ -442,8 +450,8 @@ int main(int argc, char *argv[])
       std::string hostStart = "0.0.0." + std::to_string(10 + (i * 4));
       ipv4.SetBase("172.16.4.0", "255.255.254.0", hostStart.c_str());
       Ipv4InterfaceContainer ifAdm = ipv4.Assign(adminDevs[i]);
-      AddTopologyEntry(adminNodes.Get(i)->GetId(), "Admin-PC-" + std::to_string(i + 1), "Hospital Admin",
-                       ifAdm.GetAddress(0).GetAny(), "255.255.254.0", "VLAN 30 Admin");
+      AddTopologyEntryIp(adminNodes.Get(i)->GetId(), "Admin-PC-" + std::to_string(i + 1), "Hospital Admin",
+                         ifAdm.GetAddress(0), "255.255.254.0", "VLAN 30 Admin");
     }
 
   // PACS Imaging Workstations: 172.16.7.64/26
@@ -454,8 +462,8 @@ int main(int argc, char *argv[])
       ipv4.SetBase("172.16.7.64", "255.255.255.192", hostStart.c_str());
       Ipv4InterfaceContainer ifImg = ipv4.Assign(imagingDevs[i]);
       imagingIps[i] = ifImg.GetAddress(0);
-      AddTopologyEntry(imagingNodes.Get(i)->GetId(), "PACS-Station-" + std::to_string(i + 1), "Radiology PACS",
-                       imagingIps[i].GetAny(), "255.255.255.192", "VLAN 20 Imaging");
+      AddTopologyEntryIp(imagingNodes.Get(i)->GetId(), "PACS-Station-" + std::to_string(i + 1), "Radiology PACS",
+                         imagingIps[i], "255.255.255.192", "VLAN 20 Imaging");
     }
 
   // Clinical Voice VoIP: 172.16.6.0/25
@@ -464,8 +472,8 @@ int main(int argc, char *argv[])
       std::string hostStart = "0.0.0." + std::to_string(10 + (i * 4));
       ipv4.SetBase("172.16.6.0", "255.255.255.128", hostStart.c_str());
       Ipv4InterfaceContainer ifVoi = ipv4.Assign(voiceDevs[i]);
-      AddTopologyEntry(voiceNodes.Get(i)->GetId(), "VoIP-Phone-" + std::to_string(i + 1), "Clinical Voice",
-                       ifVoi.GetAddress(0).GetAny(), "255.255.255.128", "VLAN 60 Voice");
+      AddTopologyEntryIp(voiceNodes.Get(i)->GetId(), "VoIP-Phone-" + std::to_string(i + 1), "Clinical Voice",
+                         ifVoi.GetAddress(0), "255.255.255.128", "VLAN 60 Voice");
     }
 
   // Guest Wi-Fi Clients: 172.16.0.0/22
@@ -474,8 +482,8 @@ int main(int argc, char *argv[])
       std::string hostStart = "0.0.0." + std::to_string(10 + (i * 4));
       ipv4.SetBase("172.16.0.0", "255.255.252.0", hostStart.c_str());
       Ipv4InterfaceContainer ifGst = ipv4.Assign(guestDevs[i]);
-      AddTopologyEntry(guestNodes.Get(i)->GetId(), "Guest-Client-" + std::to_string(i + 1), "Guest Untrusted",
-                       ifGst.GetAddress(0).GetAny(), "255.255.252.0", "VLAN 40 Guest");
+      AddTopologyEntryIp(guestNodes.Get(i)->GetId(), "Guest-Client-" + std::to_string(i + 1), "Guest Untrusted",
+                         ifGst.GetAddress(0), "255.255.252.0", "VLAN 40 Guest");
     }
 
   // Remote Clinic Subnets:
@@ -483,35 +491,35 @@ int main(int argc, char *argv[])
   ipv4.SetBase("172.16.8.32", "255.255.255.224", "0.0.0.35");
   Ipv4InterfaceContainer ifClinicTriage = ipv4.Assign(clinicTriageDevs);
   Ipv4Address clinicTriageIp = ifClinicTriage.GetAddress(0);
-  AddTopologyEntry(clinicTriage->GetId(), "Clinic-Triage", "Remote Patient Mon", clinicTriageIp.GetAny(), "255.255.255.224", "Clinic VLAN 10");
+  AddTopologyEntryIp(clinicTriage->GetId(), "Clinic-Triage", "Remote Patient Mon", clinicTriageIp, "255.255.255.224", "Clinic VLAN 10");
 
   // Clinic Admin: 172.16.8.0/27
   ipv4.SetBase("172.16.8.0", "255.255.255.224", "0.0.0.5");
   Ipv4InterfaceContainer ifClinicAdmin = ipv4.Assign(clinicAdminDevs);
-  AddTopologyEntry(clinicAdmin->GetId(), "Clinic-Admin", "Remote Reception", ifClinicAdmin.GetAddress(0).GetAny(), "255.255.255.224", "Clinic VLAN 30");
+  AddTopologyEntryIp(clinicAdmin->GetId(), "Clinic-Admin", "Remote Reception", ifClinicAdmin.GetAddress(0), "255.255.255.224", "Clinic VLAN 30");
 
   // Clinic Voice: 172.16.7.224/27
   ipv4.SetBase("172.16.7.224", "255.255.255.224", "0.0.0.228");
   Ipv4InterfaceContainer ifClinicVoice = ipv4.Assign(clinicVoiceDevs);
-  AddTopologyEntry(clinicVoice->GetId(), "Clinic-Voice", "Remote VoIP", ifClinicVoice.GetAddress(0).GetAny(), "255.255.255.224", "Clinic VLAN 60");
+  AddTopologyEntryIp(clinicVoice->GetId(), "Clinic-Voice", "Remote VoIP", ifClinicVoice.GetAddress(0), "255.255.255.224", "Clinic VLAN 60");
 
   // Clinic Imaging: 172.16.8.32/27 (.45)
   ipv4.SetBase("172.16.8.32", "255.255.255.224", "0.0.0.45");
   Ipv4InterfaceContainer ifClinicImaging = ipv4.Assign(clinicImagingDevs);
   Ipv4Address clinicImagingIp = ifClinicImaging.GetAddress(0);
-  AddTopologyEntry(clinicImaging->GetId(), "Clinic-Imaging", "Remote X-Ray", clinicImagingIp.GetAny(), "255.255.255.224", "Clinic VLAN 10");
+  AddTopologyEntryIp(clinicImaging->GetId(), "Clinic-Imaging", "Remote X-Ray", clinicImagingIp, "255.255.255.224", "Clinic VLAN 10");
 
   // Clinic Guest: 172.16.6.128/25
   ipv4.SetBase("172.16.6.128", "255.255.255.128", "0.0.0.135");
   Ipv4InterfaceContainer ifClinicGuest = ipv4.Assign(clinicGuestDevs);
-  AddTopologyEntry(clinicGuest->GetId(), "Clinic-Guest", "Remote Guest Wi-Fi", ifClinicGuest.GetAddress(0).GetAny(), "255.255.255.128", "Clinic VLAN 40");
+  AddTopologyEntryIp(clinicGuest->GetId(), "Clinic-Guest", "Remote Guest Wi-Fi", ifClinicGuest.GetAddress(0), "255.255.255.128", "Clinic VLAN 40");
 
   // Optional Internet Edge ISP Subnet: 172.16.8.100/30 (R1: .101, ISP: .102)
   if (enableEdge && nodeIsp != nullptr)
     {
       ipv4.SetBase("172.16.8.100", "255.255.255.252");
       Ipv4InterfaceContainer ifIsp = ipv4.Assign(ispDevs);
-      AddTopologyEntry(nodeIsp->GetId(), "EDGE-ISP", "Internet Gateway", ifIsp.GetAddress(1).GetAny(), "255.255.255.252", "Internet Edge");
+      AddTopologyEntryIp(nodeIsp->GetId(), "EDGE-ISP", "Internet Gateway", ifIsp.GetAddress(1), "255.255.255.252", "Internet Edge");
     }
 
   // Print Formatted Topology Inventory
