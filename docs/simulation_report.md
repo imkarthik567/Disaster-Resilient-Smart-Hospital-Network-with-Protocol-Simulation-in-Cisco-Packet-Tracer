@@ -177,8 +177,12 @@ Measure and validate network recovery times across six (6) distinct hardware and
 - **Tool:** `/sim/convergence_analysis.py` processing `/sim/sample_failover_data.csv`.
 
 ### 4.3 Results & Quantitative Findings
-Visualized in `results/charts/failover_theoretical_vs_observed.png` and `failover_cumulative_loss.png`:
+The failover evaluations are visualized across three publication-grade figures in `results/charts/`:
+1. `failover_theoretical_vs_observed.png` (`.pdf`): Single-sweep comparison of theoretical vs observed failover against the 3.0s vitals SLA.
+2. `failover_cumulative_loss.png` (`.pdf`): Cumulative dropped packet progression over time illustrating recovery slopes.
+3. `failover_multi_trial_comparison.png` (`.pdf`): Grouped multi-trial bar chart with 95% Confidence Interval error bars.
 
+#### Single-Sweep Baseline Failover Summary Table:
 | Scenario ID | Failure Event | Primary Protocol | Theoretical ($T_{\text{theo}}$) | Observed ($T_{\text{obs}}$) | Dropped Pings | SLA Compliance |
 | :---: | :--- | :---: | :---: | :---: | :---: | :---: |
 | **SC-01** | SW-D1 Power Loss (Dist Crash) | HSRP / RSTP | 10.00 s | **11.15 s** | 11 | **DEGRADED (Buffered)** |
@@ -187,6 +191,21 @@ Visualized in `results/charts/failover_theoretical_vs_observed.png` and `failove
 | **SC-04** | STP Root Bridge Trunk Drop | Rapid-PVST+ | 1.50 s | **1.85 s** | 2 | **PASS (< 3.0s)** |
 | **SC-05** | Server Farm Uplink Cut | RSTP Alternate Port| 0.25 s | **0.38 s** | 0 | **OPTIMAL (< 0.5s)** |
 | **SC-06** | Remote Clinic Gateway Crash | HSRP (HA Mode) | 10.00 s | **11.30 s** | 11 | **DEGRADED (Buffered)** |
+
+#### Multi-Trial Statistical Summary Table (N=10 Repetitions with 95% CI):
+| Scenario ID | Scenario Name | Configuration Mode | Protocol | Reps (N) | Mean Outage (s) | Std Dev (s) | Min / Max | 95% Confidence Interval | Clinical SLA Status |
+| :--- | :--- | :--- | :--- | :---: | :---: | :---: | :---: | :---: | :---: |
+| **SC-01** | Primary WAN Cut | Config A: Default OSPF | OSPFv2 | 10 | **1.60 s** | 0.52 s | 1.00s / 2.00s | +/- 0.37 s | **ACCEPTABLE** |
+| **SC-01** | Primary WAN Cut | Config B: Tuned Fast OSPF | OSPFv2 | 10 | **0.70 s** | 0.48 s | 0.00s / 1.00s | +/- 0.35 s | **ACCEPTABLE** |
+| **SC-01** | Primary WAN Cut | Config C: EIGRP Backup | EIGRP | 10 | **0.50 s** | 0.53 s | 0.00s / 1.00s | +/- 0.38 s | **ACCEPTABLE** |
+| **SC-02** | Secondary WAN Cut | Config A: Default OSPF | OSPFv2 | 10 | **0.00 s** | 0.00 s | 0.00s / 0.00s | +/- 0.00 s | **OPTIMAL** |
+| **SC-03** | WAN Partition & Recovery | Config A: Default OSPF | OSPFv2 | 10 | **8.20 s** | 0.63 s | 7.00s / 9.00s | +/- 0.45 s | **DEGRADED** |
+| **SC-03** | WAN Partition & Recovery | Config B: Tuned Fast OSPF | OSPFv2 | 10 | **2.70 s** | 0.48 s | 2.00s / 3.00s | +/- 0.35 s | **ACCEPTABLE** |
+| **SC-03** | WAN Partition & Recovery | Config C: EIGRP Backup | EIGRP | 10 | **3.70 s** | 0.48 s | 3.00s / 4.00s | +/- 0.35 s | **DEGRADED** |
+| **SC-04** | R1 Core Dist Uplink Down | Config A: Default OSPF | OSPFv2 | 10 | **0.70 s** | 0.48 s | 0.00s / 1.00s | +/- 0.35 s | **ACCEPTABLE** |
+| **SC-05** | SW-D1 Dist Switch Crash | Default HSRP Timers | HSRP/RSTP | 10 | **10.60 s** | 0.52 s | 10.00s / 11.00s | +/- 0.37 s | **DEGRADED** |
+| **SC-05** | SW-D1 Dist Switch Crash | Tuned Fast HSRP (msec) | HSRP/RSTP | 10 | **0.80 s** | 0.42 s | 0.00s / 1.00s | +/- 0.30 s | **ACCEPTABLE** |
+| **SC-06** | R2 Clinic Uplink Failure | HA Dual-Dist Switch | OSPF/HSRP | 10 | **1.30 s** | 0.48 s | 1.00s / 2.00s | +/- 0.35 s | **ACCEPTABLE** |
 
 ```
 ```
