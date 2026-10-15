@@ -87,7 +87,8 @@ def task_docs():
     ok3 = run_command(["topology/generate_ptbuilder.py"], "Regenerating PTBuilder Topology Scripts from Cabling Table")
     ok4 = run_command(["verification/generate_test_matrix.py"], "Regenerating Master Verification Test Matrix")
     ok5 = run_command(["automation/generate_configs.py"], "Compiling Configurations from YAML SSOT via Jinja2 Pipeline")
-    return ok1 and ok2 and ok3 and ok4 and ok5
+    ok6 = run_command(["scripts/utils/generate_network_design_doc.py"], "Generating Comprehensive Network Design Document & Word DOCX")
+    return ok1 and ok2 and ok3 and ok4 and ok5 and ok6
 
 def task_all():
     print("=" * 70)
