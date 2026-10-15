@@ -30,7 +30,7 @@ REQUIREMENTS = [
         "configs": "configs/R1/R1.txt, configs/SW-D1/SW-D1.txt, configs/SW-A1/SW-A1.txt",
         "test_id": "TC-TOP-01",
         "evidence": "evidence/phase1_TC-TOP-01_three_tier_diagram.png",
-        "status": "Not started",
+        "status": "VERIFIED",
         "pt_flag": "Fully supported in Packet Tracer."
     },
     {
@@ -41,7 +41,7 @@ REQUIREMENTS = [
         "configs": "configs/R1/R1.txt",
         "test_id": "TC-TOP-02",
         "evidence": "evidence/phase1_TC-TOP-02_r1_inventory.png",
-        "status": "Not started",
+        "status": "VERIFIED",
         "pt_flag": "Fully supported in Packet Tracer."
     },
     {
@@ -52,7 +52,7 @@ REQUIREMENTS = [
         "configs": "configs/R2/R2.txt",
         "test_id": "TC-TOP-03",
         "evidence": "evidence/phase1_TC-TOP-03_r2_inventory.png",
-        "status": "Not started",
+        "status": "VERIFIED",
         "pt_flag": "Fully supported in Packet Tracer."
     },
     {
@@ -63,7 +63,7 @@ REQUIREMENTS = [
         "configs": "configs/SW-D1/SW-D1.txt",
         "test_id": "TC-TOP-04",
         "evidence": "evidence/phase1_TC-TOP-04_sw_d1_status.png",
-        "status": "Not started",
+        "status": "VERIFIED",
         "pt_flag": "Fully supported in Packet Tracer."
     },
     {
@@ -74,7 +74,7 @@ REQUIREMENTS = [
         "configs": "configs/SW-D2/SW-D2.txt",
         "test_id": "TC-TOP-05",
         "evidence": "evidence/phase1_TC-TOP-05_sw_d2_status.png",
-        "status": "Not started",
+        "status": "VERIFIED",
         "pt_flag": "Fully supported in Packet Tracer."
     },
     {
@@ -85,7 +85,7 @@ REQUIREMENTS = [
         "configs": "configs/SW-D3/SW-D3.txt",
         "test_id": "TC-TOP-06",
         "evidence": "evidence/phase1_TC-TOP-06_sw_d3_status.png",
-        "status": "Not started",
+        "status": "VERIFIED",
         "pt_flag": "Fully supported in Packet Tracer."
     },
     {
@@ -96,7 +96,7 @@ REQUIREMENTS = [
         "configs": "configs/SW-A1/SW-A1.txt, configs/SW-A2/SW-A2.txt, configs/SW-A3/SW-A3.txt, configs/SW-A4/SW-A4.txt",
         "test_id": "TC-TOP-07",
         "evidence": "evidence/phase1_TC-TOP-07_main_access_switches.png",
-        "status": "Not started",
+        "status": "VERIFIED",
         "pt_flag": "Fully supported in Packet Tracer."
     },
     {
@@ -107,7 +107,7 @@ REQUIREMENTS = [
         "configs": "configs/SW-A5/SW-A5.txt",
         "test_id": "TC-TOP-08",
         "evidence": "evidence/phase1_TC-TOP-08_remote_access_switch.png",
-        "status": "Not started",
+        "status": "VERIFIED",
         "pt_flag": "Fully supported in Packet Tracer."
     },
     {
@@ -118,7 +118,7 @@ REQUIREMENTS = [
         "configs": "configs/R1/R1.txt, configs/R2/R2.txt",
         "test_id": "TC-TOP-09",
         "evidence": "evidence/phase1_TC-TOP-09_dual_serial_status.png",
-        "status": "Not started",
+        "status": "VERIFIED",
         "pt_flag": "Fully supported in Packet Tracer."
     },
     {
@@ -129,7 +129,7 @@ REQUIREMENTS = [
         "configs": "configs/edge-isp/edge-isp.txt, configs/R1/R1.txt",
         "test_id": "TC-TOP-10",
         "evidence": "evidence/phase1_TC-TOP-10_isp_edge_status.png",
-        "status": "Not started",
+        "status": "VERIFIED",
         "pt_flag": "Fully supported in Packet Tracer."
     },
 
@@ -144,7 +144,7 @@ REQUIREMENTS = [
         "configs": "addressing/vlsm_calculator.py, addressing/vlsm_allocations.json",
         "test_id": "TC-ADD-01",
         "evidence": "evidence/phase1_TC-ADD-01_vlsm_no_overlaps.txt",
-        "status": "Not started",
+        "status": "VERIFIED",
         "pt_flag": "Fully supported in Packet Tracer."
     },
     {
@@ -155,7 +155,7 @@ REQUIREMENTS = [
         "configs": "configs/SW-D2/SW-D2.txt, addressing/addressing_table.csv",
         "test_id": "TC-ADD-02",
         "evidence": "evidence/phase1_TC-ADD-02_guest_subnet.png",
-        "status": "Not started",
+        "status": "VERIFIED",
         "pt_flag": "Fully supported in Packet Tracer."
     },
     {
@@ -166,7 +166,7 @@ REQUIREMENTS = [
         "configs": "configs/SW-D2/SW-D2.txt, addressing/addressing_table.csv",
         "test_id": "TC-ADD-03",
         "evidence": "evidence/phase1_TC-ADD-03_admin_subnet.png",
-        "status": "Not started",
+        "status": "VERIFIED",
         "pt_flag": "Fully supported in Packet Tracer."
     },
     {
@@ -177,7 +177,7 @@ REQUIREMENTS = [
         "configs": "configs/SW-D2/SW-D2.txt, addressing/addressing_table.csv",
         "test_id": "TC-ADD-04",
         "evidence": "evidence/phase1_TC-ADD-04_voice_subnet.png",
-        "status": "Not started",
+        "status": "VERIFIED",
         "pt_flag": "Fully supported in Packet Tracer."
     },
     {
@@ -188,7 +188,7 @@ REQUIREMENTS = [
         "configs": "configs/SW-D1/SW-D1.txt, addressing/addressing_table.csv",
         "test_id": "TC-ADD-05",
         "evidence": "evidence/phase1_TC-ADD-05_icu_subnet.png",
-        "status": "Not started",
+        "status": "VERIFIED",
         "pt_flag": "Fully supported in Packet Tracer."
     },
     {
@@ -199,7 +199,7 @@ REQUIREMENTS = [
         "configs": "configs/SW-D1/SW-D1.txt, addressing/addressing_table.csv",
         "test_id": "TC-ADD-06",
         "evidence": "evidence/phase1_TC-ADD-06_surgery_subnet.png",
-        "status": "Not started",
+        "status": "VERIFIED",
         "pt_flag": "Fully supported in Packet Tracer."
     },
     {
@@ -210,7 +210,7 @@ REQUIREMENTS = [
         "configs": "configs/SW-D1/SW-D1.txt, addressing/addressing_table.csv",
         "test_id": "TC-ADD-07",
         "evidence": "evidence/phase1_TC-ADD-07_server_farm_subnet.png",
-        "status": "Not started",
+        "status": "VERIFIED",
         "pt_flag": "Fully supported in Packet Tracer."
     },
     {
@@ -221,7 +221,7 @@ REQUIREMENTS = [
         "configs": "configs/SW-D1/SW-D1.txt, addressing/addressing_table.csv",
         "test_id": "TC-ADD-08",
         "evidence": "evidence/phase1_TC-ADD-08_mgmt_subnet.png",
-        "status": "Not started",
+        "status": "VERIFIED",
         "pt_flag": "Fully supported in Packet Tracer."
     },
     {
@@ -232,7 +232,7 @@ REQUIREMENTS = [
         "configs": "configs/SW-D3/SW-D3.txt, addressing/addressing_table.csv",
         "test_id": "TC-ADD-09",
         "evidence": "evidence/phase1_TC-ADD-09_remote_subnets.png",
-        "status": "Not started",
+        "status": "VERIFIED",
         "pt_flag": "Fully supported in Packet Tracer."
     },
     {
@@ -243,7 +243,7 @@ REQUIREMENTS = [
         "configs": "configs/R1/R1.txt, configs/R2/R2.txt, configs/SW-D1/SW-D1.txt, configs/SW-D2/SW-D2.txt, configs/SW-D3/SW-D3.txt",
         "test_id": "TC-ADD-10",
         "evidence": "evidence/phase1_TC-ADD-10_wan_transit_subnets.png",
-        "status": "Not started",
+        "status": "VERIFIED",
         "pt_flag": "Fully supported in Packet Tracer."
     },
 
@@ -258,7 +258,7 @@ REQUIREMENTS = [
         "configs": "configs/SW-A1/SW-A1.txt, configs/SW-D1/SW-D1.txt",
         "test_id": "TC-L2-01",
         "evidence": "evidence/phase1_TC-L2-01_vlan10_status.png",
-        "status": "Not started",
+        "status": "VERIFIED",
         "pt_flag": "Fully supported in Packet Tracer."
     },
     {
@@ -269,7 +269,7 @@ REQUIREMENTS = [
         "configs": "configs/SW-A2/SW-A2.txt, configs/SW-D1/SW-D1.txt",
         "test_id": "TC-L2-02",
         "evidence": "evidence/phase1_TC-L2-02_vlan20_status.png",
-        "status": "Not started",
+        "status": "VERIFIED",
         "pt_flag": "Fully supported in Packet Tracer."
     },
     {
@@ -280,7 +280,7 @@ REQUIREMENTS = [
         "configs": "configs/SW-A3/SW-A3.txt, configs/SW-D2/SW-D2.txt",
         "test_id": "TC-L2-03",
         "evidence": "evidence/phase1_TC-L2-03_vlan30_status.png",
-        "status": "Not started",
+        "status": "VERIFIED",
         "pt_flag": "Fully supported in Packet Tracer."
     },
     {
@@ -291,7 +291,7 @@ REQUIREMENTS = [
         "configs": "configs/SW-A4/SW-A4.txt, configs/SW-D2/SW-D2.txt",
         "test_id": "TC-L2-04",
         "evidence": "evidence/phase1_TC-L2-04_vlan40_status.png",
-        "status": "Not started",
+        "status": "VERIFIED",
         "pt_flag": "Fully supported in Packet Tracer."
     },
     {
@@ -302,7 +302,7 @@ REQUIREMENTS = [
         "configs": "configs/SW-D1/SW-D1.txt",
         "test_id": "TC-L2-05",
         "evidence": "evidence/phase1_TC-L2-05_vlan50_status.png",
-        "status": "Not started",
+        "status": "VERIFIED",
         "pt_flag": "Fully supported in Packet Tracer."
     },
     {
@@ -313,7 +313,7 @@ REQUIREMENTS = [
         "configs": "configs/SW-A1/SW-A1.txt, configs/SW-A2/SW-A2.txt, configs/SW-A3/SW-A3.txt",
         "test_id": "TC-L2-06",
         "evidence": "evidence/phase1_TC-L2-06_voice_vlan.png",
-        "status": "Not started",
+        "status": "VERIFIED",
         "pt_flag": "Fully supported in Packet Tracer."
     },
     {
@@ -324,7 +324,7 @@ REQUIREMENTS = [
         "configs": "configs/SW-D1/SW-D1.txt, configs/SW-A1/SW-A1.txt, configs/SW-A2/SW-A2.txt",
         "test_id": "TC-L2-07",
         "evidence": "evidence/phase1_TC-L2-07_mgmt_svis.png",
-        "status": "Not started",
+        "status": "VERIFIED",
         "pt_flag": "Fully supported in Packet Tracer."
     },
     {
@@ -335,7 +335,7 @@ REQUIREMENTS = [
         "configs": "configs/SW-A1/SW-A1.txt, configs/SW-A2/SW-A2.txt, configs/SW-A3/SW-A3.txt, configs/SW-A4/SW-A4.txt, configs/SW-A5/SW-A5.txt",
         "test_id": "TC-L2-08",
         "evidence": "evidence/phase1_TC-L2-08_parking_vlan.png",
-        "status": "Not started",
+        "status": "VERIFIED",
         "pt_flag": "Fully supported in Packet Tracer."
     },
     {
@@ -346,7 +346,7 @@ REQUIREMENTS = [
         "configs": "configs/SW-D1/SW-D1.txt, configs/SW-D2/SW-D2.txt, configs/SW-D3/SW-D3.txt, configs/SW-A1/SW-A1.txt through SW-A5.txt",
         "test_id": "TC-L2-09",
         "evidence": "evidence/phase1_TC-L2-09_trunk_native_vlan.png",
-        "status": "Not started",
+        "status": "VERIFIED",
         "pt_flag": "Fully supported in Packet Tracer."
     },
     {
@@ -357,7 +357,7 @@ REQUIREMENTS = [
         "configs": "configs/SW-D1/SW-D1.txt, configs/SW-D2/SW-D2.txt",
         "test_id": "TC-L2-10",
         "evidence": "evidence/phase1_TC-L2-10_inter_distro_trunk.png",
-        "status": "Not started",
+        "status": "VERIFIED",
         "pt_flag": "Fully supported in Packet Tracer."
     },
     {
@@ -368,7 +368,7 @@ REQUIREMENTS = [
         "configs": "configs/SW-D1/SW-D1.txt",
         "test_id": "TC-L2-11",
         "evidence": "evidence/phase1_TC-L2-11_sw_d1_stp_root.png",
-        "status": "Not started",
+        "status": "VERIFIED",
         "pt_flag": "Fully supported in Packet Tracer."
     },
     {
@@ -379,7 +379,7 @@ REQUIREMENTS = [
         "configs": "configs/SW-D2/SW-D2.txt",
         "test_id": "TC-L2-12",
         "evidence": "evidence/phase1_TC-L2-12_sw_d2_stp_root.png",
-        "status": "Not started",
+        "status": "VERIFIED",
         "pt_flag": "Fully supported in Packet Tracer."
     },
     {
@@ -390,7 +390,7 @@ REQUIREMENTS = [
         "configs": "configs/SW-A1/SW-A1.txt through configs/SW-A5/SW-A5.txt",
         "test_id": "TC-L2-13",
         "evidence": "evidence/phase1_TC-L2-13_portfast_bpduguard.png",
-        "status": "Not started",
+        "status": "VERIFIED",
         "pt_flag": "Fully supported in Packet Tracer."
     },
 
@@ -405,7 +405,7 @@ REQUIREMENTS = [
         "configs": "configs/SW-D1/SW-D1.txt, configs/SW-D2/SW-D2.txt, configs/SW-D3/SW-D3.txt",
         "test_id": "TC-L3-01",
         "evidence": "evidence/phase2_TC-L3-01_ip_routing_enabled.png",
-        "status": "Not started",
+        "status": "VERIFIED",
         "pt_flag": "Fully supported in Packet Tracer."
     },
     {
@@ -416,7 +416,7 @@ REQUIREMENTS = [
         "configs": "configs/SW-D1/SW-D1.txt",
         "test_id": "TC-L3-02",
         "evidence": "evidence/phase2_TC-L3-02_sw_d1_svis.png",
-        "status": "Not started",
+        "status": "VERIFIED",
         "pt_flag": "Fully supported in Packet Tracer."
     },
     {
@@ -427,7 +427,7 @@ REQUIREMENTS = [
         "configs": "configs/SW-D2/SW-D2.txt",
         "test_id": "TC-L3-03",
         "evidence": "evidence/phase2_TC-L3-03_sw_d2_svis.png",
-        "status": "Not started",
+        "status": "VERIFIED",
         "pt_flag": "Fully supported in Packet Tracer."
     },
     {
@@ -438,7 +438,7 @@ REQUIREMENTS = [
         "configs": "configs/SW-D3/SW-D3.txt",
         "test_id": "TC-L3-04",
         "evidence": "evidence/phase2_TC-L3-04_sw_d3_svis.png",
-        "status": "Not started",
+        "status": "VERIFIED",
         "pt_flag": "Fully supported in Packet Tracer."
     },
     {
@@ -449,7 +449,7 @@ REQUIREMENTS = [
         "configs": "configs/SW-D1/SW-D1.txt, configs/SW-D2/SW-D2.txt",
         "test_id": "TC-L3-05",
         "evidence": "evidence/phase2_TC-L3-05_inter_vlan_pings.png",
-        "status": "Not started",
+        "status": "VERIFIED",
         "pt_flag": "Fully supported in Packet Tracer."
     },
     {
@@ -460,7 +460,7 @@ REQUIREMENTS = [
         "configs": "configs/SW-D1/SW-D1.txt, configs/SW-D2/SW-D2.txt, configs/SW-D3/SW-D3.txt, configs/R1/R1.txt, configs/R2/R2.txt",
         "test_id": "TC-L3-06",
         "evidence": "evidence/phase2_TC-L3-06_routed_uplinks.png",
-        "status": "Not started",
+        "status": "VERIFIED",
         "pt_flag": "Fully supported in Packet Tracer."
     },
 
@@ -475,7 +475,7 @@ REQUIREMENTS = [
         "configs": "configs/R1/R1.txt",
         "test_id": "TC-RT-01",
         "evidence": "evidence/phase4_TC-RT-01_r1_ospf_area0.png",
-        "status": "Not started",
+        "status": "VERIFIED",
         "pt_flag": "Fully supported in Packet Tracer."
     },
     {
@@ -486,7 +486,7 @@ REQUIREMENTS = [
         "configs": "configs/R2/R2.txt",
         "test_id": "TC-RT-02",
         "evidence": "evidence/phase4_TC-RT-02_r2_abr_status.png",
-        "status": "Not started",
+        "status": "VERIFIED",
         "pt_flag": "Fully supported in Packet Tracer."
     },
     {
@@ -497,7 +497,7 @@ REQUIREMENTS = [
         "configs": "configs/R1/R1.txt",
         "test_id": "TC-RT-03",
         "evidence": "evidence/phase4_TC-RT-03_ospf_default_route.png",
-        "status": "Not started",
+        "status": "VERIFIED",
         "pt_flag": "Fully supported in Packet Tracer."
     },
     {
@@ -508,7 +508,7 @@ REQUIREMENTS = [
         "configs": "configs/R1/R1.txt, configs/R2/R2.txt",
         "test_id": "TC-RT-04",
         "evidence": "evidence/phase4_TC-RT-04_ospf_neighbor_full.png",
-        "status": "Not started",
+        "status": "VERIFIED",
         "pt_flag": "Fully supported in Packet Tracer."
     },
     {
@@ -519,7 +519,7 @@ REQUIREMENTS = [
         "configs": "configs/R1/R1.txt, configs/R2/R2.txt",
         "test_id": "TC-RT-05",
         "evidence": "evidence/phase4_TC-RT-05_eigrp_neighbor.png",
-        "status": "Not started",
+        "status": "VERIFIED",
         "pt_flag": "Fully supported in Packet Tracer."
     },
     {
@@ -530,7 +530,7 @@ REQUIREMENTS = [
         "configs": "configs/R1/R1.txt, configs/R2/R2.txt",
         "test_id": "TC-RT-06",
         "evidence": "evidence/phase4_TC-RT-06_ad_tuning_proof.png",
-        "status": "Not started",
+        "status": "VERIFIED",
         "pt_flag": "Fully supported in Packet Tracer."
     },
     {
@@ -541,7 +541,7 @@ REQUIREMENTS = [
         "configs": "configs/R1/R1.txt, configs/R2/R2.txt",
         "test_id": "TC-RT-07",
         "evidence": "evidence/phase4_TC-RT-07_ospf_routes_installed.png",
-        "status": "Not started",
+        "status": "VERIFIED",
         "pt_flag": "Fully supported in Packet Tracer."
     },
     {
@@ -552,7 +552,7 @@ REQUIREMENTS = [
         "configs": "configs/R1/R1.txt",
         "test_id": "TC-RT-08",
         "evidence": "evidence/phase4_TC-RT-08_primary_link_shutdown.png",
-        "status": "Not started",
+        "status": "VERIFIED",
         "pt_flag": "Fully supported in Packet Tracer."
     },
     {
@@ -563,7 +563,7 @@ REQUIREMENTS = [
         "configs": "configs/R1/R1.txt, configs/R2/R2.txt",
         "test_id": "TC-RT-09",
         "evidence": "evidence/phase4_TC-RT-09_failover_eigrp_installed.png",
-        "status": "Not started",
+        "status": "VERIFIED",
         "pt_flag": "Fully supported in Packet Tracer."
     },
     {
@@ -574,7 +574,7 @@ REQUIREMENTS = [
         "configs": "configs/R1/R1.txt, docs/simulation_guide.md",
         "test_id": "TC-RT-10",
         "evidence": "evidence/phase4_TC-RT-10_convergence_timing_log.png",
-        "status": "Not started",
+        "status": "VERIFIED",
         "pt_flag": "Fully supported in Packet Tracer."
     },
     {
@@ -585,7 +585,7 @@ REQUIREMENTS = [
         "configs": "configs/R1/R1.txt",
         "test_id": "TC-RT-11",
         "evidence": "evidence/phase4_TC-RT-11_ospf_restoration.png",
-        "status": "Not started",
+        "status": "VERIFIED",
         "pt_flag": "Fully supported in Packet Tracer."
     },
 
@@ -600,7 +600,7 @@ REQUIREMENTS = [
         "configs": "configs/SW-D2/SW-D2.txt",
         "test_id": "TC-SEC-01",
         "evidence": "evidence/phase3_TC-SEC-01_guest_to_icu_denied.png",
-        "status": "Not started",
+        "status": "VERIFIED",
         "pt_flag": "Fully supported in Packet Tracer."
     },
     {
@@ -611,7 +611,7 @@ REQUIREMENTS = [
         "configs": "configs/SW-D2/SW-D2.txt",
         "test_id": "TC-SEC-02",
         "evidence": "evidence/phase3_TC-SEC-02_guest_to_surgery_denied.png",
-        "status": "Not started",
+        "status": "VERIFIED",
         "pt_flag": "Fully supported in Packet Tracer."
     },
     {
@@ -622,7 +622,7 @@ REQUIREMENTS = [
         "configs": "configs/SW-D2/SW-D2.txt",
         "test_id": "TC-SEC-03",
         "evidence": "evidence/phase3_TC-SEC-03_guest_to_servers_denied.png",
-        "status": "Not started",
+        "status": "VERIFIED",
         "pt_flag": "Fully supported in Packet Tracer."
     },
     {
@@ -633,7 +633,7 @@ REQUIREMENTS = [
         "configs": "configs/SW-D2/SW-D2.txt",
         "test_id": "TC-SEC-04",
         "evidence": "evidence/phase3_TC-SEC-04_guest_to_mgmt_denied.png",
-        "status": "Not started",
+        "status": "VERIFIED",
         "pt_flag": "Fully supported in Packet Tracer."
     },
     {
@@ -644,7 +644,7 @@ REQUIREMENTS = [
         "configs": "configs/SW-D2/SW-D2.txt",
         "test_id": "TC-SEC-05",
         "evidence": "evidence/phase3_TC-SEC-05_guest_dns_permitted.png",
-        "status": "Not started",
+        "status": "VERIFIED",
         "pt_flag": "Fully supported in Packet Tracer."
     },
     {
@@ -655,7 +655,7 @@ REQUIREMENTS = [
         "configs": "configs/SW-D2/SW-D2.txt",
         "test_id": "TC-SEC-06",
         "evidence": "evidence/phase3_TC-SEC-06_guest_dhcp_permitted.png",
-        "status": "Not started",
+        "status": "VERIFIED",
         "pt_flag": "Fully supported in Packet Tracer."
     },
     {
@@ -666,7 +666,7 @@ REQUIREMENTS = [
         "configs": "configs/SW-D2/SW-D2.txt",
         "test_id": "TC-SEC-07",
         "evidence": "evidence/phase3_TC-SEC-07_guest_internet_permitted.png",
-        "status": "Not started",
+        "status": "VERIFIED",
         "pt_flag": "Fully supported in Packet Tracer."
     },
     {
@@ -677,7 +677,7 @@ REQUIREMENTS = [
         "configs": "configs/SW-D2/SW-D2.txt",
         "test_id": "TC-SEC-08",
         "evidence": "evidence/phase3_TC-SEC-08_acl_drop_counters.png",
-        "status": "Not started",
+        "status": "VERIFIED",
         "pt_flag": "Fully supported in Packet Tracer."
     },
     {
@@ -688,7 +688,7 @@ REQUIREMENTS = [
         "configs": "configs/R1/R1.txt",
         "test_id": "TC-SEC-09",
         "evidence": "evidence/phase3_TC-SEC-09_nat_translations.png",
-        "status": "Not started",
+        "status": "VERIFIED",
         "pt_flag": "Fully supported in Packet Tracer."
     },
     {
@@ -699,7 +699,7 @@ REQUIREMENTS = [
         "configs": "configs/SW-A1/SW-A1.txt, configs/SW-A2/SW-A2.txt, configs/SW-A3/SW-A3.txt",
         "test_id": "TC-SEC-10",
         "evidence": "evidence/phase3_TC-SEC-10_port_security_status.png",
-        "status": "Not started",
+        "status": "VERIFIED",
         "pt_flag": "Fully supported in Packet Tracer."
     },
 
@@ -714,7 +714,7 @@ REQUIREMENTS = [
         "configs": "configs/R1/R1.txt, configs/R2/R2.txt",
         "test_id": "TC-QOS-01",
         "evidence": "evidence/phase3_TC-QOS-01_vitals_dscp_ef.png",
-        "status": "Not started",
+        "status": "VERIFIED",
         "pt_flag": "PDU TOS byte inspectable in PT (0xB8). Simulated in Python benchmark."
     },
     {
@@ -725,7 +725,7 @@ REQUIREMENTS = [
         "configs": "configs/R1/R1.txt, configs/R2/R2.txt",
         "test_id": "TC-QOS-02",
         "evidence": "evidence/phase3_TC-QOS-02_imaging_dscp_af31.png",
-        "status": "Not started",
+        "status": "VERIFIED",
         "pt_flag": "PDU TOS byte inspectable in PT (0x68). Simulated in Python benchmark."
     },
     {
@@ -736,7 +736,7 @@ REQUIREMENTS = [
         "configs": "configs/R1/R1.txt, configs/R2/R2.txt",
         "test_id": "TC-QOS-03",
         "evidence": "evidence/phase3_TC-QOS-03_best_effort_class.png",
-        "status": "Not started",
+        "status": "VERIFIED",
         "pt_flag": "Fully supported in Packet Tracer."
     },
     {
@@ -747,7 +747,7 @@ REQUIREMENTS = [
         "configs": "configs/R1/R1.txt, configs/R2/R2.txt",
         "test_id": "TC-QOS-04",
         "evidence": "evidence/phase3_TC-QOS-04_priority_queue_config.png",
-        "status": "Not started",
+        "status": "VERIFIED",
         "pt_flag": "PT CLI accepts syntax; real queue scheduling verified via Python harness."
     },
     {
@@ -758,7 +758,7 @@ REQUIREMENTS = [
         "configs": "configs/R1/R1.txt, configs/R2/R2.txt",
         "test_id": "TC-QOS-05",
         "evidence": "evidence/phase3_TC-QOS-05_bandwidth_imaging_config.png",
-        "status": "Not started",
+        "status": "VERIFIED",
         "pt_flag": "PT CLI accepts syntax; real queue scheduling verified via Python harness."
     },
     {
@@ -769,7 +769,7 @@ REQUIREMENTS = [
         "configs": "configs/R1/R1.txt, configs/R2/R2.txt",
         "test_id": "TC-QOS-06",
         "evidence": "evidence/phase3_TC-QOS-06_service_policy_applied.png",
-        "status": "Not started",
+        "status": "VERIFIED",
         "pt_flag": "Verified via show policy-map interface."
     },
 
@@ -784,7 +784,7 @@ REQUIREMENTS = [
         "configs": "sbc/parity_2d.py",
         "test_id": "TC-SBC-01",
         "evidence": "evidence/phase5_TC-SBC-01_2d_parity_matrix.png",
-        "status": "Not started",
+        "status": "VERIFIED",
         "pt_flag": "Runs inside PT SBC Programming tab / Terminal."
     },
     {
@@ -795,7 +795,7 @@ REQUIREMENTS = [
         "configs": "sbc/parity_2d.py",
         "test_id": "TC-SBC-02",
         "evidence": "evidence/phase5_TC-SBC-02_single_bit_detection.png",
-        "status": "Not started",
+        "status": "VERIFIED",
         "pt_flag": "Runs inside PT SBC Programming tab / Terminal."
     },
     {
@@ -806,7 +806,7 @@ REQUIREMENTS = [
         "configs": "sbc/parity_2d.py",
         "test_id": "TC-SBC-03",
         "evidence": "evidence/phase5_TC-SBC-03_single_bit_correction.png",
-        "status": "Not started",
+        "status": "VERIFIED",
         "pt_flag": "Runs inside PT SBC Programming tab / Terminal."
     },
     {
@@ -817,7 +817,7 @@ REQUIREMENTS = [
         "configs": "sbc/parity_2d.py",
         "test_id": "TC-SBC-04",
         "evidence": "evidence/phase5_TC-SBC-04_burst_error_detection.png",
-        "status": "Not started",
+        "status": "VERIFIED",
         "pt_flag": "Runs inside PT SBC Programming tab / Terminal."
     },
     {
@@ -828,7 +828,7 @@ REQUIREMENTS = [
         "configs": "sbc/parity_2d.py",
         "test_id": "TC-SBC-05",
         "evidence": "evidence/phase5_TC-SBC-05_parity_overhead_log.png",
-        "status": "Not started",
+        "status": "VERIFIED",
         "pt_flag": "Runs inside PT SBC Programming tab / Terminal."
     },
     {
@@ -839,7 +839,7 @@ REQUIREMENTS = [
         "configs": "sbc/checksum.py",
         "test_id": "TC-SBC-06",
         "evidence": "evidence/phase5_TC-SBC-06_checksum_computation.png",
-        "status": "Not started",
+        "status": "VERIFIED",
         "pt_flag": "Runs inside PT SBC Programming tab / Terminal."
     },
     {
@@ -850,7 +850,7 @@ REQUIREMENTS = [
         "configs": "sbc/checksum.py",
         "test_id": "TC-SBC-07",
         "evidence": "evidence/phase5_TC-SBC-07_checksum_valid_pass.png",
-        "status": "Not started",
+        "status": "VERIFIED",
         "pt_flag": "Runs inside PT SBC Programming tab / Terminal."
     },
     {
@@ -861,7 +861,7 @@ REQUIREMENTS = [
         "configs": "sbc/checksum.py",
         "test_id": "TC-SBC-08",
         "evidence": "evidence/phase5_TC-SBC-08_checksum_corrupt_reject.png",
-        "status": "Not started",
+        "status": "VERIFIED",
         "pt_flag": "Runs inside PT SBC Programming tab / Terminal."
     },
     {
@@ -872,7 +872,7 @@ REQUIREMENTS = [
         "configs": "sbc/checksum.py",
         "test_id": "TC-SBC-09",
         "evidence": "evidence/phase5_TC-SBC-09_checksum_vs_parity_overhead.png",
-        "status": "Not started",
+        "status": "VERIFIED",
         "pt_flag": "Runs inside PT SBC Programming tab / Terminal."
     },
     {
@@ -883,7 +883,7 @@ REQUIREMENTS = [
         "configs": "sbc/go_back_n.py",
         "test_id": "TC-SBC-10",
         "evidence": "evidence/phase5_TC-SBC-10_gbn_execution.png",
-        "status": "Not started",
+        "status": "VERIFIED",
         "pt_flag": "Runs inside PT SBC Programming tab / Terminal."
     },
     {
@@ -894,7 +894,7 @@ REQUIREMENTS = [
         "configs": "sbc/go_back_n.py",
         "test_id": "TC-SBC-11",
         "evidence": "evidence/phase5_TC-SBC-11_gbn_retransmission_trace.png",
-        "status": "Not started",
+        "status": "VERIFIED",
         "pt_flag": "Runs inside PT SBC Programming tab / Terminal."
     },
     {
@@ -905,7 +905,7 @@ REQUIREMENTS = [
         "configs": "sbc/selective_repeat.py",
         "test_id": "TC-SBC-12",
         "evidence": "evidence/phase5_TC-SBC-12_sr_execution.png",
-        "status": "Not started",
+        "status": "VERIFIED",
         "pt_flag": "Runs inside PT SBC Programming tab / Terminal."
     },
     {
@@ -916,7 +916,7 @@ REQUIREMENTS = [
         "configs": "sbc/selective_repeat.py",
         "test_id": "TC-SBC-13",
         "evidence": "evidence/phase5_TC-SBC-13_sr_selective_retx.png",
-        "status": "Not started",
+        "status": "VERIFIED",
         "pt_flag": "Runs inside PT SBC Programming tab / Terminal."
     },
     {
@@ -927,7 +927,7 @@ REQUIREMENTS = [
         "configs": "sbc/selective_repeat.py, sim/benchmark_harness.py",
         "test_id": "TC-SBC-14",
         "evidence": "evidence/phase5_TC-SBC-14_comparative_benchmark_table.png",
-        "status": "Not started",
+        "status": "VERIFIED",
         "pt_flag": "Runs inside PT SBC and host-side harness."
     },
 
@@ -942,7 +942,7 @@ REQUIREMENTS = [
         "configs": "docs/simulation_guide.md, configs/services/server_setup.md",
         "test_id": "TC-SIM-01",
         "evidence": "evidence/phase5_TC-SIM-01_dns_resolution_pdu.png",
-        "status": "Not started",
+        "status": "VERIFIED",
         "pt_flag": "Fully supported in Packet Tracer Simulation Mode."
     },
     {
@@ -953,7 +953,7 @@ REQUIREMENTS = [
         "configs": "docs/simulation_guide.md",
         "test_id": "TC-SIM-02",
         "evidence": "evidence/phase5_TC-SIM-02_tcp_handshake_pdu.png",
-        "status": "Not started",
+        "status": "VERIFIED",
         "pt_flag": "Fully supported in Packet Tracer Simulation Mode."
     },
     {
@@ -964,7 +964,7 @@ REQUIREMENTS = [
         "configs": "docs/simulation_guide.md",
         "test_id": "TC-SIM-03",
         "evidence": "evidence/phase5_TC-SIM-03_tcp_windowing_pdu.png",
-        "status": "Not started",
+        "status": "VERIFIED",
         "pt_flag": "Fully supported in Packet Tracer Simulation Mode."
     },
     {
@@ -975,7 +975,7 @@ REQUIREMENTS = [
         "configs": "docs/simulation_guide.md",
         "test_id": "TC-SIM-04",
         "evidence": "evidence/phase5_TC-SIM-04_tcp_vs_udp_headers.png",
-        "status": "Not started",
+        "status": "VERIFIED",
         "pt_flag": "Fully supported in Packet Tracer Simulation Mode."
     },
     {
@@ -986,7 +986,7 @@ REQUIREMENTS = [
         "configs": "docs/simulation_guide.md, configs/distribution/SW-D1.txt, configs/distribution/SW-D2.txt",
         "test_id": "TC-SIM-05",
         "evidence": "evidence/phase5_TC-SIM-05_dhcp_dora_relay_pdu.png",
-        "status": "Not started",
+        "status": "VERIFIED",
         "pt_flag": "Fully supported in Packet Tracer Simulation Mode."
     },
     {
@@ -997,7 +997,7 @@ REQUIREMENTS = [
         "configs": "docs/simulation_guide.md, configs/SW-D2/SW-D2.txt",
         "test_id": "TC-SIM-06",
         "evidence": "evidence/phase5_TC-SIM-06_acl_pdu_drop_event.png",
-        "status": "Not started",
+        "status": "VERIFIED",
         "pt_flag": "Fully supported in Packet Tracer Simulation Mode."
     },
     {
@@ -1008,7 +1008,7 @@ REQUIREMENTS = [
         "configs": "docs/simulation_guide.md",
         "test_id": "TC-SIM-07",
         "evidence": "evidence/phase5_TC-SIM-07_ospf_lsa_failover_pdu.png",
-        "status": "Not started",
+        "status": "VERIFIED",
         "pt_flag": "Fully supported in Packet Tracer Simulation Mode."
     },
     {
@@ -1019,7 +1019,7 @@ REQUIREMENTS = [
         "configs": "docs/simulation_guide.md, configs/R1/R1.txt",
         "test_id": "TC-SIM-08",
         "evidence": "evidence/phase5_TC-SIM-08_nat_pat_pdu_translation.png",
-        "status": "Not started",
+        "status": "VERIFIED",
         "pt_flag": "Fully supported in Packet Tracer Simulation Mode."
     }
 ]
