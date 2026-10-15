@@ -71,6 +71,8 @@ run_experiment "E2_QUEUE_QOS"     "${SCRIPT_DIR}/run_e2.sh" ${EXTRA_FLAGS}
 run_experiment "E3_PACKET_SIZE"   "${SCRIPT_DIR}/run_e3.sh" ${EXTRA_FLAGS}
 run_experiment "E4_TCP_DYNAMICS"  "${SCRIPT_DIR}/run_e4.sh" ${EXTRA_FLAGS}
 run_experiment "E5_WAN_FAILOVER"  "${SCRIPT_DIR}/run_e5.sh" ${EXTRA_FLAGS}
+run_experiment "E6_WIFI_DYNAMICS" "${SCRIPT_DIR}/run_e6.sh" ${EXTRA_FLAGS}
+run_experiment "E7_ATTACK_ML"     "${SCRIPT_DIR}/run_e7.sh" ${EXTRA_FLAGS}
 
 echo -e "\n================================================================================" | tee -a "${MASTER_LOG}"
 echo "  MASTER EXECUTION SUMMARY" | tee -a "${MASTER_LOG}"
