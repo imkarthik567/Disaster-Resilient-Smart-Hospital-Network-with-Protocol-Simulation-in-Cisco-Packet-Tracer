@@ -344,7 +344,7 @@ class HospitalDigitalTwin:
             "> The NetworkX graph model predictions correlated with Cisco Packet Tracer empirical measurements with **98.4% path accuracy**:\n"
             ">\n"
             "> 1. **Path Cost Equivalence:** The Dijkstra path computed by the graph model for Primary WAN failure (`R1 -> Se0/0/1 -> R2 -> SW-D3`, Cost 502) matched the exact routing table entry installed in `R1` in Packet Tracer (`show ip route ospf`).\n"
-            "> 2. **Dynamic Convergence Delay:** The static graph model assumes instantaneous path cutover ($0\text{ ms}$). In real Packet Tracer simulation, protocol timer mechanisms (HSRP 10s hold timer, OSPF 1.74s LSA flood) introduce transient packet loss during the convergence window, reinforcing the clinical requirement for SBC-PT local ring buffering."
+            "> 2. **Dynamic Convergence Delay:** The static graph model assumes instantaneous path cutover ($0\\text{ ms}$). In real Packet Tracer simulation, protocol timer mechanisms (HSRP 10s hold timer, OSPF 1.74s LSA flood) introduce transient packet loss during the convergence window, reinforcing the clinical requirement for SBC-PT local ring buffering."
         )
 
         with open(RESILIENCE_REPORT_MD, "w", encoding="utf-8") as f:

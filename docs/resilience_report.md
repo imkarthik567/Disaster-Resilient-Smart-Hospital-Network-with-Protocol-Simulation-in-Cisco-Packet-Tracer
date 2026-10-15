@@ -46,13 +46,13 @@ A 10,000-run stochastic Monte Carlo simulation evaluated random simultaneous com
 
 | Clinical Traffic Flow | Simulated Availability (%) | Expected Uptime ('Nines') | Annual Downtime Estimate |
 | :--- | :---: | :---: | :---: |
-| **ICU Telemetry -> Central EHR** | **97.020%** | Three Nines (99.9%) | 15662.9 minutes/year |
-| **Surgery Vitals -> Central EHR** | **97.150%** | Three Nines (99.9%) | 14979.6 minutes/year |
-| **Admin Billing -> Central EHR** | **97.310%** | Three Nines (99.9%) | 14138.6 minutes/year |
-| **Clinic Cache -> Central EHR (WAN)** | **94.880%** | Three Nines (99.9%) | 26910.7 minutes/year |
-| **ICU Nurse Station -> Central EHR** | **97.260%** | Three Nines (99.9%) | 14401.4 minutes/year |
-| **Access SW-A1 -> Standby Dist SW-D2** | **99.650%** | Three Nines (99.9%) | 1839.6 minutes/year |
-| **Core Inter-Distribution Trunk** | **99.580%** | Three Nines (99.9%) | 2207.5 minutes/year |
+| **ICU Telemetry -> Central EHR** | **97.430%** | Three Nines (99.9%) | 13507.9 minutes/year |
+| **Surgery Vitals -> Central EHR** | **97.310%** | Three Nines (99.9%) | 14138.6 minutes/year |
+| **Admin Billing -> Central EHR** | **97.440%** | Three Nines (99.9%) | 13455.4 minutes/year |
+| **Clinic Cache -> Central EHR (WAN)** | **94.860%** | Three Nines (99.9%) | 27015.8 minutes/year |
+| **ICU Nurse Station -> Central EHR** | **97.200%** | Three Nines (99.9%) | 14716.8 minutes/year |
+| **Access SW-A1 -> Standby Dist SW-D2** | **99.600%** | Three Nines (99.9%) | 2102.4 minutes/year |
+| **Core Inter-Distribution Trunk** | **99.550%** | Three Nines (99.9%) | 2365.2 minutes/year |
 
 ---
 
@@ -62,4 +62,4 @@ A 10,000-run stochastic Monte Carlo simulation evaluated random simultaneous com
 > The NetworkX graph model predictions correlated with Cisco Packet Tracer empirical measurements with **98.4% path accuracy**:
 >
 > 1. **Path Cost Equivalence:** The Dijkstra path computed by the graph model for Primary WAN failure (`R1 -> Se0/0/1 -> R2 -> SW-D3`, Cost 502) matched the exact routing table entry installed in `R1` in Packet Tracer (`show ip route ospf`).
-> 2. **Dynamic Convergence Delay:** The static graph model assumes instantaneous path cutover ($0	ext{ ms}$). In real Packet Tracer simulation, protocol timer mechanisms (HSRP 10s hold timer, OSPF 1.74s LSA flood) introduce transient packet loss during the convergence window, reinforcing the clinical requirement for SBC-PT local ring buffering.
+> 2. **Dynamic Convergence Delay:** The static graph model assumes instantaneous path cutover ($0\text{ ms}$). In real Packet Tracer simulation, protocol timer mechanisms (HSRP 10s hold timer, OSPF 1.74s LSA flood) introduce transient packet loss during the convergence window, reinforcing the clinical requirement for SBC-PT local ring buffering.
